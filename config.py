@@ -1,7 +1,7 @@
 """
 Configuration for the Dual LLM System.
-- Large LLM  : Claude Opus 4.6 via Anthropic API
-- Small LLM  : Local model via Ollama (http://localhost:11434)
+- Large LLM  : Gemini 2.0 Pro via Google GenAI API
+- Small LLM  : Gemini 2.5 Flash via Google GenAI API
 """
 
 import os
@@ -9,14 +9,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── Anthropic (Large LLM) ────────────────────────────────────────────────────
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-LARGE_MODEL = "claude-opus-4-6"
-
-# ── Ollama (Small LLM) ───────────────────────────────────────────────────────
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-# Change to any model you have pulled: phi3:mini, llama3.2:3b, mistral, etc.
-SMALL_MODEL = os.getenv("SMALL_MODEL", "llama3.2:3b")
+# ── Google GenAI (both LLMs) ─────────────────────────────────────────────────
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
+LARGE_MODEL    = os.getenv("LARGE_MODEL",  "gemini-2.0-pro-exp")
+SMALL_MODEL    = os.getenv("SMALL_MODEL",  "gemini-2.5-flash-preview-04-17")
 
 # ── Routing thresholds ───────────────────────────────────────────────────────
 # Minimum classifier confidence to trust a "simple" routing decision

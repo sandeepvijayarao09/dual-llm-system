@@ -1,21 +1,26 @@
 """
-Large LLM client — Claude Opus 4.6 via Anthropic API.
+Large LLM client — Gemini 2.0 Pro via Google GenAI API.
 
-Uses adaptive thinking for complex queries and streaming to avoid timeouts.
+Used for complex queries requiring deep reasoning.
+Personalization is handled via system prompt injection (user profile).
+
+Install: pip install google-genai
+Docs:    https://ai.google.dev/gemini-api/docs
 """
 
-import anthropic
-from config import ANTHROPIC_API_KEY, LARGE_MODEL
+from google import genai
+from google.genai import types
+from config import GOOGLE_API_KEY, LARGE_MODEL, LARGE_LLM_TIMEOUT
 
 
 class LargeLLM:
     def __init__(self):
-        if not ANTHROPIC_API_KEY:
+        if not GOOGLE_API_KEY:
             raise ValueError(
-                "ANTHROPIC_API_KEY is not set. "
+                "GOOGLE_API_KEY is not set. "
                 "Add it to your .env file or environment."
             )
-        self.client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        self.client = genai.Client(api_key=GOOGLE_API_KEY)
         self.model = LARGE_MODEL
 
     # ── Public API ────────────────────────────────────────────────────────────
@@ -29,36 +34,52 @@ class LargeLLM:
         max_tokens: int = 4096,
     ) -> str:
         """
-        Call Claude Opus with optional adaptive thinking.
-        Streams internally and returns the full text response.
+        Call Gemini 2.0 Pro and return the full response text.
+        use_thinking enables Gemini's thinking mode for complex reasoning.
         """
-        messages = self._build_messages(history, user_message)
+        contents = self._build_contents(history, user_message)
 
-        kwargs: dict = {
-            "model": self.model,
-            "max_tokens": max_tokens,
-            "system": system,
-            "messages": messages,
+        config_kwargs: dict = {
+            "max_output_tokens": max_tokens,
+            "temperature": 0.7,
+            "system_instruction": system,
         }
 
         if use_thinking:
-            kwargs["thinking"] = {"type": "adaptive"}
+            config_kwargs["thinking_config"] = types.ThinkingConfig(
+                thinking_budget=8192,
+            )
 
-        full_text = ""
-        with self.client.messages.stream(**kwargs) as stream:
-            for text in stream.text_stream:
-                full_text += text
+        config = types.GenerateContentConfig(**config_kwargs)
 
-        return full_text.strip()
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=contents,
+            config=config,
+        )
+
+        return response.text.strip() if response.text else ""
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
-    def _build_messages(
+    def _build_contents(
         self, history: list[dict] | None, user_message: str
-    ) -> list[dict]:
-        messages = []
+    ) -> list:
+        """Build the contents list for the Gemini API."""
+        contents = []
         if history:
             for turn in history:
-                messages.append({"role": turn["role"], "content": turn["content"]})
-        messages.append({"role": "user", "content": user_message})
-        return messages
+                role = "user" if turn["role"] == "user" else "model"
+                contents.append(
+                    types.Content(
+                        role=role,
+                        parts=[types.Part(text=turn["content"])]
+                    )
+                )
+        contents.append(
+            types.Content(
+                role="user",
+                parts=[types.Part(text=user_message)]
+            )
+        )
+        return contents

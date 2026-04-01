@@ -1,24 +1,29 @@
 """
-Small LLM client — local model via Ollama REST API.
+Small LLM client — Gemini 2.5 Flash via Google GenAI API.
 
-Ollama exposes an OpenAI-compatible endpoint at http://localhost:11434/v1
-and its own native /api/chat endpoint. We use the native endpoint because
-it doesn't require an extra SDK dependency.
+Used for:
+  - Query classification / routing
+  - Direct answers to simple queries (personalized via user profile)
+  - Adding short context notes after Large LLM answers
 
-Install Ollama:  https://ollama.com/download
-Pull a model:    ollama pull llama3.2:3b
+Install: pip install google-genai
+Docs:    https://ai.google.dev/gemini-api/docs
 """
 
-import json
-import requests
-from config import OLLAMA_BASE_URL, SMALL_MODEL, SMALL_LLM_TIMEOUT
+from google import genai
+from google.genai import types
+from config import GOOGLE_API_KEY, SMALL_MODEL, SMALL_LLM_TIMEOUT
 
 
 class SmallLLM:
     def __init__(self):
-        self.base_url = OLLAMA_BASE_URL.rstrip("/")
+        if not GOOGLE_API_KEY:
+            raise ValueError(
+                "GOOGLE_API_KEY is not set. "
+                "Add it to your .env file or environment."
+            )
+        self.client = genai.Client(api_key=GOOGLE_API_KEY)
         self.model = SMALL_MODEL
-        self._check_connection()
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -31,73 +36,50 @@ class SmallLLM:
         json_mode: bool = False,
     ) -> str:
         """
-        Call the local Ollama model and return the response text.
+        Call Gemini 2.5 Flash and return the response text.
         Set json_mode=True to request a JSON-formatted response.
         """
-        messages = self._build_messages(system, history, user_message)
+        contents = self._build_contents(history, user_message)
 
-        payload: dict = {
-            "model": self.model,
-            "messages": messages,
-            "stream": False,
-            "options": {
-                "num_predict": max_tokens,
-                "temperature": 0.1 if json_mode else 0.7,
-            },
+        config_kwargs: dict = {
+            "max_output_tokens": max_tokens,
+            "temperature": 0.1 if json_mode else 0.7,
+            "system_instruction": system,
         }
 
         if json_mode:
-            payload["format"] = "json"
+            config_kwargs["response_mime_type"] = "application/json"
 
-        try:
-            response = requests.post(
-                f"{self.base_url}/api/chat",
-                json=payload,
-                timeout=SMALL_LLM_TIMEOUT,
-            )
-            response.raise_for_status()
-            data = response.json()
-            return data["message"]["content"].strip()
-        except requests.exceptions.ConnectionError:
-            raise ConnectionError(
-                f"Cannot reach Ollama at {self.base_url}. "
-                "Make sure Ollama is running: `ollama serve`"
-            )
-        except requests.exceptions.Timeout:
-            raise TimeoutError(
-                f"Ollama timed out after {SMALL_LLM_TIMEOUT}s. "
-                "Try a smaller model or increase SMALL_LLM_TIMEOUT."
-            )
+        config = types.GenerateContentConfig(**config_kwargs)
 
-    def list_models(self) -> list[str]:
-        """Return names of locally available Ollama models."""
-        try:
-            resp = requests.get(f"{self.base_url}/api/tags", timeout=5)
-            resp.raise_for_status()
-            return [m["name"] for m in resp.json().get("models", [])]
-        except Exception:
-            return []
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=contents,
+            config=config,
+        )
+
+        return response.text.strip() if response.text else ""
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
-    def _check_connection(self) -> None:
-        try:
-            requests.get(f"{self.base_url}/api/tags", timeout=5)
-        except Exception:
-            print(
-                f"⚠️  Warning: Cannot reach Ollama at {self.base_url}. "
-                "Small LLM calls will fail until Ollama is started.\n"
-                "  → Install : https://ollama.com/download\n"
-                f"  → Pull    : ollama pull {self.model}\n"
-                "  → Start   : ollama serve\n"
-            )
-
-    def _build_messages(
-        self, system: str, history: list[dict] | None, user_message: str
-    ) -> list[dict]:
-        messages = [{"role": "system", "content": system}]
+    def _build_contents(
+        self, history: list[dict] | None, user_message: str
+    ) -> list:
+        """Build the contents list for the Gemini API."""
+        contents = []
         if history:
             for turn in history:
-                messages.append({"role": turn["role"], "content": turn["content"]})
-        messages.append({"role": "user", "content": user_message})
-        return messages
+                role = "user" if turn["role"] == "user" else "model"
+                contents.append(
+                    types.Content(
+                        role=role,
+                        parts=[types.Part(text=turn["content"])]
+                    )
+                )
+        contents.append(
+            types.Content(
+                role="user",
+                parts=[types.Part(text=user_message)]
+            )
+        )
+        return contents

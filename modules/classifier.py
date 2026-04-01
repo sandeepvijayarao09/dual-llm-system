@@ -32,13 +32,12 @@ Output schema (all fields required):
   "confidence":       <float 0.0–1.0>,
   "requires_tools":   <true|false>,
   "sensitive":        <true|false>,
-  "routing_decision": "small" | "big" | "big_then_small"
+  "routing_decision": "small" | "big"
 }
 
 Routing rules:
-- "small"          : complexity=simple, confidence≥0.75, no tools needed, not sensitive
-- "big"            : complexity=complex OR requires_tools=true OR sensitive=true
-- "big_then_small" : complexity=complex AND the answer will likely need tone/length adjustment
+- "small" : complexity=simple, confidence≥0.75, no tools needed, not sensitive
+- "big"   : complexity=moderate OR complex OR requires_tools=true OR sensitive=true
 
 Output ONLY the raw JSON. No explanation."""
 

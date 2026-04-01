@@ -1,98 +1,95 @@
 """
-Personalizer — runs on the Small LLM (local Ollama).
+ContextAdder — runs on the Small LLM (local Ollama).
 
-Takes the Large LLM's raw output and applies stylistic transformation
-based on the user's profile.
+Adds a short personalised context note to any answer (small or large LLM).
 
-CRITICAL CONSTRAINT: Never alter facts, numbers, or specific claims.
-Only adjust tone, structure, length, and format.
+KEY DESIGN:
+  - Never receives the Large LLM output (avoids large input problem).
+  - Only receives: user query + user profile (~150 tokens total).
+  - Outputs: 2-3 sentence personalised note that connects the topic
+    to the user's background, experience, or interests.
 """
 
 from llm.small_llm import SmallLLM
 
-PERSONALIZER_SYSTEM = """You are a text formatter and style adapter.
+CONTEXT_ADDER_SYSTEM = """You are a personalisation assistant.
 
-Your ONLY job is to reformat or rephrase the provided text to match the requested style.
+Your ONLY job is to write a short context note (2-3 sentences MAX) that:
+1. Connects the topic of the user's query to their personal background or interests.
+2. Adds relevant insight based on their expertise level.
+3. Makes the answer feel tailored specifically to them.
 
-STRICT RULES — never break these:
-1. Do NOT change any facts, numbers, dates, names, or specific claims.
-2. Do NOT add new information that wasn't in the original.
-3. Do NOT remove key information unless the user explicitly wants a shorter version.
-4. ONLY change: tone, sentence structure, paragraph layout, length, and formatting style.
-
-Output ONLY the reformatted text. No preamble like "Here is the reformatted text:"."""
+STRICT RULES:
+- Do NOT repeat or summarise the main answer.
+- Do NOT answer the question yourself.
+- Do NOT exceed 3 sentences.
+- Output ONLY the context note. No preamble."""
 
 
 class Personalizer:
+    """
+    Renamed internally to ContextAdder but kept as Personalizer
+    for backwards compatibility with orchestrator imports.
+    """
+
     def __init__(self, small_llm: SmallLLM):
         self.llm = small_llm
 
-    def personalize(
+    def add_context(
         self,
-        raw_response: str,
+        query: str,
         user_profile: dict | None = None,
-        original_query: str = "",
     ) -> str:
         """
-        Reformat the Large LLM's response to match user preferences.
-        Returns the raw response unchanged if no profile is provided.
+        Generate a short personalised context note based on the query
+        and user profile. Does NOT receive or process the main answer.
+        Returns empty string if no profile is provided.
         """
         if not user_profile:
-            return raw_response
+            return ""
 
-        style_request = self._build_style_request(user_profile)
-        if not style_request:
-            return raw_response
+        profile_summary = self._build_profile_summary(user_profile)
+        if not profile_summary:
+            return ""
 
         prompt = (
-            f"Original query: {original_query}\n\n"
-            f"Text to reformat:\n{raw_response}\n\n"
-            f"Style instructions: {style_request}"
+            f"User profile: {profile_summary}\n\n"
+            f"User asked about: {query}\n\n"
+            "Write a short personalised context note (2-3 sentences) "
+            "that connects this topic to the user's background."
         )
-
-        # Cap output at 110 % of input length to prevent expansion
-        max_tokens = int(len(raw_response.split()) * 1.1) + 100
-        max_tokens = min(max_tokens, 2048)
 
         result = self.llm.complete(
-            system=PERSONALIZER_SYSTEM,
+            system=CONTEXT_ADDER_SYSTEM,
             user_message=prompt,
-            max_tokens=max_tokens,
+            max_tokens=150,
         )
 
-        return result if result else raw_response
+        return result.strip() if result else ""
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
-    def _build_style_request(self, profile: dict) -> str:
+    def _build_profile_summary(self, profile: dict) -> str:
+        """Build a compact profile string to inject into the prompt."""
         parts = []
-        tone = profile.get("tone")
-        length = profile.get("length")
-        fmt = profile.get("format")
         expertise = profile.get("expertise")
+        tone      = profile.get("tone")
+        interests = profile.get("interests")
+        domain    = profile.get("domain")
+        name      = profile.get("name")
 
-        if tone == "casual":
-            parts.append("Use a friendly, casual conversational tone.")
-        elif tone == "formal":
-            parts.append("Use a formal, professional tone.")
-        elif tone == "technical":
-            parts.append("Use precise technical language.")
+        if name:
+            parts.append(f"Name: {name}")
+        if expertise:
+            parts.append(f"Expertise: {expertise}")
+        if domain:
+            parts.append(f"Domain: {domain}")
+        if interests:
+            if isinstance(interests, list):
+                parts.append(f"Interests: {', '.join(interests)}")
+            else:
+                parts.append(f"Interests: {interests}")
+        if tone:
+            parts.append(f"Preferred tone: {tone}")
 
-        if length == "brief":
-            parts.append("Shorten the response significantly, keeping only the essentials.")
-        elif length == "detailed":
-            parts.append("Keep all detail; structure it clearly.")
-
-        if fmt == "bullets":
-            parts.append("Use bullet points for the main content.")
-        elif fmt == "prose":
-            parts.append("Use flowing prose paragraphs, no bullet points.")
-        elif fmt == "plain":
-            parts.append("Use plain text with no markdown formatting.")
-
-        if expertise == "novice":
-            parts.append("Simplify technical terms and add brief explanations.")
-        elif expertise == "expert":
-            parts.append("Assume expert knowledge; skip basic explanations.")
-
-        return " ".join(parts)
+        return " | ".join(parts)
