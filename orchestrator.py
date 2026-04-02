@@ -2,19 +2,20 @@
 Orchestration Engine — the central brain of the Dual LLM System.
 
 Flow:
-  1. Pre-flight checks (token count)
-  2. Classify with Small LLM → routing decision (small | big)
-  3. Route:
+  1. Load user profile from DB (auto, by user_id)
+  2. Pre-flight checks (token count)
+  3. Classify with Small LLM → routing decision (small | big)
+  4. Route:
        "small" → SimpleAnswerer (Small LLM, personalized via profile)
-                 → no context note needed, already personalized
        "big"   → Reasoner (Large LLM, personalized via profile injection)
-                 → ContextAdder (Small LLM) adds a short personal note
-                 → final output = Large answer + context note
+                 → ContextAdder adds a short personal note (query + profile only)
+  5. After session: ProfileUpdater extracts signals → ProfileDB merges updates
 
 Key design decisions:
   - Large LLM output is NEVER passed to Small LLM (avoids large input problem).
   - Personalization for Large LLM is done via system prompt injection (~50-80 tokens).
-  - Small LLM only adds a 2-3 sentence context note (query + profile, always small).
+  - Profile evolves automatically after every session — no manual updates needed.
+  - ProfileUpdater only sees user queries (never LLM answers) — always small input.
 """
 
 import time
@@ -25,7 +26,9 @@ from llm.large_llm import LargeLLM
 from modules.classifier import Classifier
 from modules.answerer import SimpleAnswerer
 from modules.reasoner import Reasoner
-from modules.personalizer import Personalizer   # acts as ContextAdder
+from modules.personalizer import Personalizer       # ContextAdder
+from modules.profile_updater import ProfileUpdater
+from db.profile_db import ProfileDB
 
 
 @dataclass
@@ -48,14 +51,57 @@ class Orchestrator:
         self.large_llm = LargeLLM()
 
         # Initialise modules
-        self.classifier    = Classifier(self.small_llm)
-        self.answerer      = SimpleAnswerer(self.small_llm)
-        self.reasoner      = Reasoner(self.large_llm)
-        self.context_adder = Personalizer(self.small_llm)   # ContextAdder
+        self.classifier      = Classifier(self.small_llm)
+        self.answerer        = SimpleAnswerer(self.small_llm)
+        self.reasoner        = Reasoner(self.large_llm)
+        self.context_adder   = Personalizer(self.small_llm)
+        self.profile_updater = ProfileUpdater(self.small_llm)
+        self.profile_db      = ProfileDB()
 
         print(f"  Small LLM : {self.small_llm.model} (Google Gemini)")
         print(f"  Large LLM : {self.large_llm.model} (Google Gemini)")
         print("✅ Ready\n")
+
+    # ── Profile helpers ───────────────────────────────────────────────────────
+
+    def load_profile(self, user_id: str) -> dict:
+        """Load a user's profile from the database by user_id."""
+        return self.profile_db.get(user_id)
+
+    def end_session(
+        self,
+        user_id: str,
+        session_queries: list[str],
+        verbose: bool = False,
+    ) -> dict:
+        """
+        Call this at the end of a session to dynamically update the user profile.
+
+        Steps:
+          1. ProfileUpdater analyzes session queries (Small LLM, small input)
+          2. ProfileDB merges extracted signals into existing profile
+          3. Returns the updated profile
+
+        Only user queries are analyzed — never LLM answers.
+        """
+        if not session_queries:
+            return self.profile_db.get(user_id)
+
+        if verbose:
+            print(f"\n  → Updating profile for user '{user_id}'...")
+
+        current_profile = self.profile_db.get(user_id)
+        updates = self.profile_updater.extract_updates(session_queries, current_profile)
+
+        if verbose:
+            print(f"  → Extracted updates: {updates}")
+
+        updated_profile = self.profile_db.merge_updates(user_id, updates)
+
+        if verbose:
+            print(f"  → Profile updated. Interaction #{updated_profile['interaction_count']}")
+
+        return updated_profile
 
     # ── Main entry point ──────────────────────────────────────────────────────
 
@@ -64,8 +110,16 @@ class Orchestrator:
         query: str,
         history: list[dict] | None = None,
         user_profile: dict | None = None,
+        user_id: str | None = None,
         verbose: bool = False,
     ) -> OrchestratorResponse:
+        """
+        If user_id is provided, profile is auto-loaded from DB.
+        user_profile dict can still be passed directly to override DB lookup.
+        """
+        # Auto-load profile from DB if user_id given and no explicit profile
+        if user_id and not user_profile:
+            user_profile = self.profile_db.get(user_id)
         """
         Process a user query end-to-end and return the response with metadata.
         """

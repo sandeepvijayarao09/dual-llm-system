@@ -24,3 +24,7 @@ LARGE_INPUT_THRESHOLD = int(os.getenv("LARGE_INPUT_THRESHOLD", "2000"))
 # ── Timeouts (seconds) ───────────────────────────────────────────────────────
 SMALL_LLM_TIMEOUT = int(os.getenv("SMALL_LLM_TIMEOUT", "60"))
 LARGE_LLM_TIMEOUT = int(os.getenv("LARGE_LLM_TIMEOUT", "120"))
+
+# ── Profile Database ──────────────────────────────────────────────────────────
+# SQLite file path for storing user profiles
+DB_PATH = os.getenv("DB_PATH", "profiles.db")
