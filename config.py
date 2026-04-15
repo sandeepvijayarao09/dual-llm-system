@@ -11,7 +11,7 @@ load_dotenv()
 
 # ── OpenAI (both LLMs) ───────────────────────────────────────────────────────
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-LARGE_MODEL    = os.getenv("LARGE_MODEL",  "o3")
+LARGE_MODEL    = os.getenv("LARGE_MODEL",  "gpt-4o")
 SMALL_MODEL    = os.getenv("SMALL_MODEL",  "gpt-4o-mini")
 
 # ── Routing thresholds ───────────────────────────────────────────────────────

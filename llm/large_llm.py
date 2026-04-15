@@ -39,12 +39,15 @@ class LargeLLM:
         """
         messages = self._build_messages(system, history, user_message)
 
+        # o3 and reasoning models don't support temperature
+        is_reasoning = self.model.startswith("o")
         kwargs: dict = {
             "model": self.model,
             "messages": messages,
-            "max_tokens": max_tokens,
-            "temperature": 0.7,
+            "max_completion_tokens": max_tokens,
         }
+        if not is_reasoning:
+            kwargs["temperature"] = 0.7
 
         response = self.client.chat.completions.create(**kwargs)
         return response.choices[0].message.content.strip()
