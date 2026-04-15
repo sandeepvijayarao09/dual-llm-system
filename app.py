@@ -18,53 +18,79 @@ def get_orchestrator():
 
 orch = get_orchestrator()
 
-# ── Sidebar: User profile ────────────────────────────────────────────────────
-st.sidebar.title("👤 User Profile")
+# ── Preset profiles ──────────────────────────────────────────────────────────
+PRESET_PROFILES = {
+    "cs_student": "🎓 Alex — CS College Student",
+    "nasa_engineer": "🚀 Dr. Sarah Chen — NASA Engineer",
+    "high_school": "📚 Jordan — High School Student",
+    "guest": "👤 Guest (blank profile)",
+}
 
-user_id = st.sidebar.text_input("User ID", value="guest")
+# ── Sidebar: User profile ────────────────────────────────────────────────────
+st.sidebar.title("👤 Switch User")
+
+# Profile switcher
+selected_key = st.sidebar.selectbox(
+    "Select a persona",
+    options=list(PRESET_PROFILES.keys()),
+    format_func=lambda k: PRESET_PROFILES[k],
+)
+
+# Track profile switches to clear chat
+if "current_user" not in st.session_state:
+    st.session_state.current_user = selected_key
+if st.session_state.current_user != selected_key:
+    st.session_state.current_user = selected_key
+    st.session_state.messages = []
+    st.session_state.session_queries = []
+    st.rerun()
+
+user_id = selected_key
 
 # Load profile from DB
 profile = orch.load_profile(user_id)
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("Current Profile")
+st.sidebar.subheader("Profile Details")
 
-# Editable profile fields
-profile["name"] = st.sidebar.text_input("Name", value=profile.get("name", ""))
-profile["expertise"] = st.sidebar.selectbox(
-    "Expertise",
-    ["novice", "intermediate", "expert"],
-    index=["novice", "intermediate", "expert"].index(profile.get("expertise", "intermediate")),
-)
-profile["tone"] = st.sidebar.selectbox(
-    "Tone",
-    ["casual", "formal", "technical"],
-    index=["casual", "formal", "technical"].index(profile.get("tone", "casual")),
-)
-profile["domain"] = st.sidebar.text_input("Domain", value=profile.get("domain", ""))
+# Display profile info (read-only for presets)
+st.sidebar.markdown(f"**Name:** {profile.get('name') or 'Guest'}")
+st.sidebar.markdown(f"**Expertise:** {profile.get('expertise', 'unknown')}")
+st.sidebar.markdown(f"**Tone:** {profile.get('tone', 'unknown')}")
+st.sidebar.markdown(f"**Domain:** {profile.get('domain') or 'not set'}")
 
-interests_str = ", ".join(profile.get("interests", []))
-interests_input = st.sidebar.text_input("Interests (comma separated)", value=interests_str)
-profile["interests"] = [i.strip() for i in interests_input.split(",") if i.strip()]
+interests = profile.get("interests", [])
+if interests:
+    st.sidebar.markdown(f"**Interests:** {', '.join(interests)}")
 
-profile["preferred_format"] = st.sidebar.selectbox(
-    "Format",
-    ["prose", "bullets", "plain"],
-    index=["prose", "bullets", "plain"].index(profile.get("preferred_format", "prose")),
-)
-
-# Save profile button
-if st.sidebar.button("💾 Save Profile"):
-    orch.profile_db.save(user_id, profile)
-    st.sidebar.success("Profile saved!")
+background = profile.get("background", "")
+if background:
+    st.sidebar.markdown("---")
+    st.sidebar.caption("Background")
+    st.sidebar.markdown(f"*{background}*")
 
 st.sidebar.markdown("---")
 st.sidebar.caption(f"Sessions: {profile.get('interaction_count', 0)}")
-st.sidebar.caption(f"Topics: {profile.get('topics_discussed', [])}")
+topics = profile.get("topics_discussed", [])
+if topics:
+    st.sidebar.caption(f"Topics discussed: {', '.join(topics)}")
 
 # ── Main area: Chat ──────────────────────────────────────────────────────────
 st.title("🧠 Dual LLM System")
-st.caption("Two models. One experience. Built around you.")
+
+# Show who is active
+col_name, col_badge = st.columns([3, 1])
+with col_name:
+    st.caption(f"Chatting as **{profile.get('name') or 'Guest'}** — {profile.get('domain') or 'no domain'} — {profile.get('expertise', 'unknown')} level")
+with col_badge:
+    if profile.get("expertise") == "expert":
+        st.markdown("🔴 Expert")
+    elif profile.get("expertise") == "intermediate":
+        st.markdown("🟡 Intermediate")
+    else:
+        st.markdown("🟢 Novice")
+
+st.markdown("---")
 
 # Init session state
 if "messages" not in st.session_state:
@@ -77,7 +103,7 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
         if msg.get("metadata"):
-            with st.expander("🔍 Details"):
+            with st.expander("🔍 Routing Details"):
                 st.json(msg["metadata"])
 
 # Chat input
@@ -102,16 +128,17 @@ if prompt := st.chat_input("Ask anything..."):
         st.markdown(resp.answer)
 
         # Show routing metadata
-        icon = "🏠 Small LLM" if "small" in resp.routing_decision else "☁️ Large LLM"
+        icon = "🏠 Small LLM (GPT-4o Mini)" if "small" in resp.routing_decision else "☁️ Large LLM (GPT-4o)"
         metadata = {
-            "routing": f"{icon} ({resp.routing_decision})",
+            "routing": f"{icon}",
+            "decision": resp.routing_decision,
             "model": resp.model_used,
             "latency": f"{resp.latency_ms:.0f} ms",
             "context_note": resp.context_note or "(none)",
             "classification": resp.classification,
         }
 
-        with st.expander("🔍 Details"):
+        with st.expander("🔍 Routing Details"):
             st.json(metadata)
 
     # Save assistant response
@@ -122,6 +149,7 @@ if prompt := st.chat_input("Ask anything..."):
     })
 
 # ── Bottom bar: Session controls ──────────────────────────────────────────────
+st.markdown("---")
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -143,7 +171,6 @@ with col2:
                 f"Expertise: {updated.get('expertise')}"
             )
             st.session_state.session_queries = []
-            st.rerun()
         else:
             st.warning("No queries to analyze or using guest mode.")
 

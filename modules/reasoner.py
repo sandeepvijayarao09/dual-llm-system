@@ -90,4 +90,8 @@ class Reasoner:
         elif fmt == "prose":
             hint += "\n- Format: flowing prose, no bullet points."
 
+        background = profile.get("background")
+        if background:
+            hint += f"\n- Background: {background}"
+
         return hint
