@@ -1,7 +1,7 @@
 """
 Configuration for the Dual LLM System.
-- Large LLM  : Gemini 2.0 Pro via Google GenAI API
-- Small LLM  : Gemini 2.5 Flash via Google GenAI API
+- Large LLM  : GPT-5 via OpenAI API
+- Small LLM  : GPT-4o Mini via OpenAI API
 """
 
 import os
@@ -9,10 +9,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── Google GenAI (both LLMs) ─────────────────────────────────────────────────
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
-LARGE_MODEL    = os.getenv("LARGE_MODEL",  "gemini-2.0-pro-exp")
-SMALL_MODEL    = os.getenv("SMALL_MODEL",  "gemini-2.5-flash-preview-04-17")
+# ── OpenAI (both LLMs) ───────────────────────────────────────────────────────
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+LARGE_MODEL    = os.getenv("LARGE_MODEL",  "o3")
+SMALL_MODEL    = os.getenv("SMALL_MODEL",  "gpt-4o-mini")
 
 # ── Routing thresholds ───────────────────────────────────────────────────────
 # Minimum classifier confidence to trust a "simple" routing decision

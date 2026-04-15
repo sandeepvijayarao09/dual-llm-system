@@ -58,8 +58,8 @@ class Orchestrator:
         self.profile_updater = ProfileUpdater(self.small_llm)
         self.profile_db      = ProfileDB()
 
-        print(f"  Small LLM : {self.small_llm.model} (Google Gemini)")
-        print(f"  Large LLM : {self.large_llm.model} (Google Gemini)")
+        print(f"  Small LLM : {self.small_llm.model} (OpenAI)")
+        print(f"  Large LLM : {self.large_llm.model} (OpenAI)")
         print("✅ Ready\n")
 
     # ── Profile helpers ───────────────────────────────────────────────────────
