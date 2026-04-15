@@ -1,8 +1,12 @@
 """
-Simple Answerer — runs on the Small LLM (local Ollama).
+Simple Answerer — runs on the Small LLM.
 Used for queries classified as "simple" that don't need the Large LLM.
+
+Personalization: the raw user profile is passed to the model as-is.
+The model decides how to adapt — no hardcoded rules.
 """
 
+import json
 from llm.small_llm import SmallLLM
 
 ANSWERER_SYSTEM = """You are a helpful, concise assistant.
@@ -24,7 +28,7 @@ class SimpleAnswerer:
         """Generate a direct answer using the Small LLM."""
         system = ANSWERER_SYSTEM
         if user_profile:
-            system += self._profile_hint(user_profile)
+            system += "\n\nUser profile:\n" + json.dumps(user_profile, indent=2)
 
         return self.llm.complete(
             system=system,
@@ -32,22 +36,3 @@ class SimpleAnswerer:
             history=history,
             max_tokens=512,
         )
-
-    # ── Helpers ───────────────────────────────────────────────────────────────
-
-    def _profile_hint(self, profile: dict) -> str:
-        hints = []
-        tone = profile.get("tone")
-        length = profile.get("length")
-        expertise = profile.get("expertise")
-        if tone:
-            hints.append(f"Use a {tone} tone.")
-        if length == "brief":
-            hints.append("Keep the answer very short.")
-        elif length == "detailed":
-            hints.append("Provide a thorough answer.")
-        if expertise == "expert":
-            hints.append("Assume the user has expert knowledge.")
-        elif expertise == "novice":
-            hints.append("Explain clearly without jargon.")
-        return (" " + " ".join(hints)) if hints else ""
