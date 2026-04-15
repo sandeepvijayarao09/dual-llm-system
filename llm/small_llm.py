@@ -6,23 +6,27 @@ Used for:
   - Direct answers to simple queries (personalized via user profile)
   - Adding short context notes after Large LLM answers
   - Profile updates at end of session
-
-Install: pip install openai
-Docs:    https://platform.openai.com/docs
 """
 
-from openai import OpenAI
+import logging
+
+from openai import OpenAI, APIError, APITimeoutError, RateLimitError
 from config import OPENAI_API_KEY, SMALL_MODEL, SMALL_LLM_TIMEOUT
+
+logger = logging.getLogger(__name__)
 
 
 class SmallLLM:
-    def __init__(self):
+    def __init__(self) -> None:
         if not OPENAI_API_KEY:
             raise ValueError(
                 "OPENAI_API_KEY is not set. "
                 "Add it to your .env file or environment."
             )
-        self.client = OpenAI(api_key=OPENAI_API_KEY)
+        self.client = OpenAI(
+            api_key=OPENAI_API_KEY,
+            timeout=SMALL_LLM_TIMEOUT,
+        )
         self.model = SMALL_MODEL
 
     # ── Public API ────────────────────────────────────────────────────────────
@@ -51,13 +55,25 @@ class SmallLLM:
         if json_mode:
             kwargs["response_format"] = {"type": "json_object"}
 
-        response = self.client.chat.completions.create(**kwargs)
-        return response.choices[0].message.content.strip()
+        try:
+            response = self.client.chat.completions.create(**kwargs)
+            content = response.choices[0].message.content if response.choices else None
+            return content.strip() if content else ""
+        except APITimeoutError:
+            logger.error("Small LLM timed out after %ss", SMALL_LLM_TIMEOUT)
+            raise
+        except RateLimitError as exc:
+            logger.error("Small LLM rate limited: %s", exc)
+            raise
+        except APIError as exc:
+            logger.error("Small LLM API error: %s", exc)
+            raise
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
+    @staticmethod
     def _build_messages(
-        self, system: str, history: list[dict] | None, user_message: str
+        system: str, history: list[dict] | None, user_message: str
     ) -> list[dict]:
         messages = [{"role": "system", "content": system}]
         if history:

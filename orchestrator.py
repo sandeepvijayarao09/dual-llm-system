@@ -4,22 +4,24 @@ Orchestration Engine — the central brain of the Dual LLM System.
 Flow:
   1. Load user profile from DB (auto, by user_id)
   2. Pre-flight checks (token count)
-  3. Classify with Small LLM → routing decision (small | big)
+  3. Classify with Small LLM -> routing decision (small | big)
   4. Route:
-       "small" → SimpleAnswerer (Small LLM, personalized via profile)
-       "big"   → Reasoner (Large LLM, personalized via profile injection)
-                 → ContextAdder adds a short personal note (query + profile only)
-  5. After session: ProfileUpdater extracts signals → ProfileDB merges updates
+       "small" -> SimpleAnswerer (Small LLM, personalized via profile)
+       "big"   -> Reasoner (Large LLM, personalized via profile injection)
+                  -> ContextAdder adds a short personal note (query + profile only)
+  5. After session: ProfileUpdater extracts signals -> ProfileDB merges updates
 
 Key design decisions:
   - Large LLM output is NEVER passed to Small LLM (avoids large input problem).
-  - Personalization for Large LLM is done via system prompt injection (~50-80 tokens).
-  - Profile evolves automatically after every session — no manual updates needed.
-  - ProfileUpdater only sees user queries (never LLM answers) — always small input.
+  - Personalization for Large LLM is done via system prompt injection.
+  - Profile evolves automatically after every session.
+  - ProfileUpdater only sees user queries (never LLM answers).
 """
 
+import logging
 import time
 from dataclasses import dataclass, field
+
 from config import CONFIDENCE_THRESHOLD, LARGE_INPUT_THRESHOLD
 from llm.small_llm import SmallLLM
 from llm.large_llm import LargeLLM
@@ -30,9 +32,12 @@ from modules.personalizer import Personalizer       # ContextAdder
 from modules.profile_updater import ProfileUpdater
 from db.profile_db import ProfileDB
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class OrchestratorResponse:
+    """Structured response returned by the orchestrator for every query."""
     answer: str
     routing_decision: str       # "small" | "big" | "pre-flight:large-input"
     model_used: str              # which model produced the main answer
@@ -43,8 +48,10 @@ class OrchestratorResponse:
 
 
 class Orchestrator:
-    def __init__(self):
-        print("🔧 Initialising Dual LLM System...")
+    """Central orchestrator that routes queries between Small and Large LLMs."""
+
+    def __init__(self) -> None:
+        logger.info("Initialising Dual LLM System...")
 
         # Initialise LLM clients
         self.small_llm = SmallLLM()
@@ -58,9 +65,9 @@ class Orchestrator:
         self.profile_updater = ProfileUpdater(self.small_llm)
         self.profile_db      = ProfileDB()
 
-        print(f"  Small LLM : {self.small_llm.model} (OpenAI)")
-        print(f"  Large LLM : {self.large_llm.model} (OpenAI)")
-        print("✅ Ready\n")
+        logger.info("Small LLM : %s (OpenAI)", self.small_llm.model)
+        logger.info("Large LLM : %s (OpenAI)", self.large_llm.model)
+        logger.info("System ready.")
 
     # ── Profile helpers ───────────────────────────────────────────────────────
 
@@ -72,10 +79,9 @@ class Orchestrator:
         self,
         user_id: str,
         session_queries: list[str],
-        verbose: bool = False,
     ) -> dict:
         """
-        Call this at the end of a session to dynamically update the user profile.
+        Call at the end of a session to dynamically update the user profile.
 
         Steps:
           1. ProfileUpdater analyzes session queries (Small LLM, small input)
@@ -87,20 +93,16 @@ class Orchestrator:
         if not session_queries:
             return self.profile_db.get(user_id)
 
-        if verbose:
-            print(f"\n  → Updating profile for user '{user_id}'...")
+        logger.info("Updating profile for user '%s' (%d queries)...", user_id, len(session_queries))
 
         current_profile = self.profile_db.get(user_id)
         updates = self.profile_updater.extract_updates(session_queries, current_profile)
 
-        if verbose:
-            print(f"  → Extracted updates: {updates}")
+        logger.debug("Extracted updates: %s", updates)
 
         updated_profile = self.profile_db.merge_updates(user_id, updates)
 
-        if verbose:
-            print(f"  → Profile updated. Interaction #{updated_profile['interaction_count']}")
-
+        logger.info("Profile updated. Interaction #%d", updated_profile["interaction_count"])
         return updated_profile
 
     # ── Main entry point ──────────────────────────────────────────────────────
@@ -114,52 +116,46 @@ class Orchestrator:
         verbose: bool = False,
     ) -> OrchestratorResponse:
         """
-        If user_id is provided, profile is auto-loaded from DB.
-        user_profile dict can still be passed directly to override DB lookup.
+        Process a user query end-to-end and return the response with metadata.
+
+        If user_id is provided, the profile is auto-loaded from the DB.
+        A user_profile dict can still be passed directly to override DB lookup.
         """
         # Auto-load profile from DB if user_id given and no explicit profile
         if user_id and not user_profile:
             user_profile = self.profile_db.get(user_id)
-        """
-        Process a user query end-to-end and return the response with metadata.
-        """
+
         start = time.time()
 
         try:
             # ── Step 1: Pre-flight ─────────────────────────────────────────
             token_count = len(query.split())
             if token_count > LARGE_INPUT_THRESHOLD:
-                if verbose:
-                    print(f"  → Pre-flight: {token_count} tokens — routing directly to Large LLM")
+                logger.info("Pre-flight: %d words — routing directly to Large LLM", token_count)
                 return self._route_big(
                     query, history, user_profile,
                     "pre-flight:large-input", start
                 )
 
             # ── Step 2: Classify ───────────────────────────────────────────
-            if verbose:
-                print("  → Classifying query with Small LLM...")
-
             clf = self.classifier.classify(query)
 
-            if verbose:
-                print(f"  → Classification: {clf.routing_decision} "
-                      f"(complexity={clf.complexity}, confidence={clf.confidence:.2f}, "
-                      f"intent={clf.intent})")
+            logger.info(
+                "Classification: %s (complexity=%s, confidence=%.2f, intent=%s)",
+                clf.routing_decision, clf.complexity, clf.confidence, clf.intent,
+            )
 
             # Override to "big" if confidence too low for a "small" decision
             routing = clf.routing_decision
             if routing == "small" and clf.confidence < CONFIDENCE_THRESHOLD:
                 routing = "big"
-                if verbose:
-                    print(f"  → Confidence {clf.confidence:.2f} < {CONFIDENCE_THRESHOLD} "
-                          "— upgrading to Large LLM")
+                logger.info(
+                    "Confidence %.2f < %.2f — upgrading to Large LLM",
+                    clf.confidence, CONFIDENCE_THRESHOLD,
+                )
 
             # ── Step 3: Route ──────────────────────────────────────────────
             if routing == "small":
-                # Small LLM answers directly — personalized via profile
-                if verbose:
-                    print("  → Answering with Small LLM (personalized)...")
                 answer = self.answerer.answer(query, history, user_profile)
                 return OrchestratorResponse(
                     answer=answer,
@@ -174,8 +170,9 @@ class Orchestrator:
                 return self._route_big(query, history, user_profile, routing, start, clf.raw)
 
         except Exception as exc:
+            logger.exception("Error processing query: %s", exc)
             return OrchestratorResponse(
-                answer=f"❌ Error: {exc}",
+                answer=f"Error: {exc}",
                 routing_decision="error",
                 model_used="none",
                 context_note="",
@@ -188,8 +185,8 @@ class Orchestrator:
     def _route_big(
         self,
         query: str,
-        history,
-        user_profile,
+        history: list[dict] | None,
+        user_profile: dict | None,
         routing: str,
         start: float,
         classification: dict | None = None,
@@ -198,15 +195,12 @@ class Orchestrator:
         Large LLM answers (personalized via profile injection).
         Small LLM adds a short context note (never sees the large output).
         """
-        # Large LLM: answers + personalizes in one shot
         main_answer = self.reasoner.reason(
             query, history, user_profile=user_profile
         )
 
-        # Small LLM: adds context note (query + profile only, never the main answer)
         context_note = self.context_adder.add_context(query, user_profile)
 
-        # Assemble final response
         if context_note:
             final_answer = f"{main_answer}\n\n---\n💡 For you:\n{context_note}"
         else:

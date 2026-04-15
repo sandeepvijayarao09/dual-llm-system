@@ -1,5 +1,5 @@
 """
-ContextAdder — runs on the Small LLM.
+ContextAdder — runs on the Small LLM (GPT-4o Mini via OpenAI).
 
 Adds a short personalised context note to any answer (small or large LLM).
 

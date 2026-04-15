@@ -1,25 +1,29 @@
 """
-Large LLM client — GPT o3 (or GPT-4o) via OpenAI API.
+Large LLM client — GPT-4o (or o3) via OpenAI API.
 
 Used for complex queries requiring deep reasoning.
 Personalization is handled via system prompt injection (user profile).
-
-Install: pip install openai
-Docs:    https://platform.openai.com/docs
 """
 
-from openai import OpenAI
+import logging
+
+from openai import OpenAI, APIError, APITimeoutError, RateLimitError
 from config import OPENAI_API_KEY, LARGE_MODEL, LARGE_LLM_TIMEOUT
+
+logger = logging.getLogger(__name__)
 
 
 class LargeLLM:
-    def __init__(self):
+    def __init__(self) -> None:
         if not OPENAI_API_KEY:
             raise ValueError(
                 "OPENAI_API_KEY is not set. "
                 "Add it to your .env file or environment."
             )
-        self.client = OpenAI(api_key=OPENAI_API_KEY)
+        self.client = OpenAI(
+            api_key=OPENAI_API_KEY,
+            timeout=LARGE_LLM_TIMEOUT,
+        )
         self.model = LARGE_MODEL
 
     # ── Public API ────────────────────────────────────────────────────────────
@@ -34,12 +38,12 @@ class LargeLLM:
     ) -> str:
         """
         Call the Large LLM and return the full response text.
-        use_thinking is accepted for interface compatibility but
-        OpenAI reasoning models handle this internally.
+        Automatically handles reasoning models (o-series) that don't
+        support temperature or max_tokens params.
         """
         messages = self._build_messages(system, history, user_message)
 
-        # o3 and reasoning models don't support temperature
+        # o-series reasoning models don't support temperature
         is_reasoning = self.model.startswith("o")
         kwargs: dict = {
             "model": self.model,
@@ -49,13 +53,25 @@ class LargeLLM:
         if not is_reasoning:
             kwargs["temperature"] = 0.7
 
-        response = self.client.chat.completions.create(**kwargs)
-        return response.choices[0].message.content.strip()
+        try:
+            response = self.client.chat.completions.create(**kwargs)
+            content = response.choices[0].message.content if response.choices else None
+            return content.strip() if content else ""
+        except APITimeoutError:
+            logger.error("Large LLM timed out after %ss", LARGE_LLM_TIMEOUT)
+            raise
+        except RateLimitError as exc:
+            logger.error("Large LLM rate limited: %s", exc)
+            raise
+        except APIError as exc:
+            logger.error("Large LLM API error: %s", exc)
+            raise
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
+    @staticmethod
     def _build_messages(
-        self, system: str, history: list[dict] | None, user_message: str
+        system: str, history: list[dict] | None, user_message: str
     ) -> list[dict]:
         messages = [{"role": "system", "content": system}]
         if history:

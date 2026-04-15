@@ -11,6 +11,7 @@ Usage:
 
 import argparse
 import json
+import logging
 import sys
 from orchestrator import Orchestrator
 
@@ -162,7 +163,7 @@ def _end_session(
     """Trigger dynamic profile update at end of session."""
     if session_queries and user_id != "guest":
         print("\n  📊 Updating your profile based on this session...")
-        updated = orch.end_session(user_id, session_queries, verbose=verbose)
+        updated = orch.end_session(user_id, session_queries)
         print(f"  ✅ Profile updated — "
               f"interests: {updated.get('interests')} | "
               f"expertise: {updated.get('expertise')}\n")
@@ -190,6 +191,14 @@ def main() -> None:
     parser.add_argument("--user",         type=str, default="guest", help="User ID for persistent profile")
     parser.add_argument("--show-profile", action="store_true", help="Print saved profile and exit")
     args = parser.parse_args()
+
+    # Configure logging
+    log_level = logging.DEBUG if args.verbose else logging.WARNING
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%H:%M:%S",
+    )
 
     try:
         orch = Orchestrator()

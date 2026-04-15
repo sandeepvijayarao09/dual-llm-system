@@ -1,5 +1,5 @@
 """
-ProfileUpdater — runs on the Small LLM (Gemini 2.5 Flash).
+ProfileUpdater — runs on the Small LLM (GPT-4o Mini via OpenAI).
 
 At the end of each session, analyzes only the user's queries
 (never the LLM answers) and extracts profile signals:

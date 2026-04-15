@@ -1,21 +1,20 @@
 """
-Classifier module — runs on the Small LLM (local Ollama).
+Classifier module — runs on the Small LLM (GPT-4o Mini via OpenAI).
 
 Analyses the incoming query and returns a structured routing decision:
   {
     "complexity":        "simple" | "moderate" | "complex",
-    "intent":            "greeting" | "factual" | "math" | "coding" |
+    "intent":           "greeting" | "factual" | "math" | "coding" |
                          "reasoning" | "creative" | "other",
     "confidence":        0.0 – 1.0,
     "requires_tools":    true | false,
-    "sensitive":         true | false,   (legal / medical / financial)
-    "routing_decision":  "small" | "big" | "big_then_small"
+    "sensitive":         true | false,
+    "routing_decision":  "small" | "big"
   }
 
 routing_decision meanings:
-  small          → answer directly with the Small LLM
-  big            → send to Large LLM, return as-is
-  big_then_small → send to Large LLM, then personalise with Small LLM
+  small → answer directly with the Small LLM
+  big   → send to Large LLM (personalized via profile injection)
 """
 
 import json
