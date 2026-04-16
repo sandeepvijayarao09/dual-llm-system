@@ -192,25 +192,43 @@ class Orchestrator:
         classification: dict | None = None,
     ) -> OrchestratorResponse:
         """
-        Large LLM answers (personalized via profile injection).
-        Small LLM adds a short context note (never sees the large output).
+        Flow:
+          1. Large LLM answers (NO profile — pure core concept)
+          2. Small LLM summarizes the answer in 1 line
+          3. Small LLM generates personalized intro + closing
+             (using query + profile + 1-line summary, never full output)
+          4. Final = intro + core answer + closing
         """
-        main_answer = self.reasoner.reason(
-            query, history, user_profile=user_profile
-        )
+        # Step 1: Large LLM — core concept only, no profile
+        core_answer = self.reasoner.reason(query, history)
 
-        context_note = self.context_adder.add_context(query, user_profile)
+        # Step 2: Small LLM — 1-line summary for context awareness
+        answer_summary = self.context_adder.summarize(core_answer)
+        logger.debug("Answer summary: %s", answer_summary)
 
-        if context_note:
-            final_answer = f"{main_answer}\n\n---\n💡 For you:\n{context_note}"
-        else:
-            final_answer = main_answer
+        # Step 3: Small LLM — personalized intro + closing
+        context = self.context_adder.add_context(query, user_profile, answer_summary)
+        intro = context.get("intro", "")
+        closing = context.get("closing", "")
+
+        # Step 4: Assemble final response
+        parts = []
+        if intro:
+            parts.append(intro)
+            parts.append("")   # blank line
+        parts.append(core_answer)
+        if closing:
+            parts.append("")
+            parts.append("---")
+            parts.append(f"💡 {closing}")
+
+        final_answer = "\n".join(parts)
 
         return OrchestratorResponse(
             answer=final_answer,
             routing_decision=routing,
             model_used=self.large_llm.model,
-            context_note=context_note,
+            context_note=closing,
             classification=classification or {},
             latency_ms=self._ms(start),
         )
