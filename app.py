@@ -40,6 +40,7 @@ selected_key = st.sidebar.selectbox(
 if "current_user" not in st.session_state:
     st.session_state.current_user = selected_key
 if st.session_state.current_user != selected_key:
+    orch.clear_buffer(st.session_state.current_user)
     st.session_state.current_user = selected_key
     st.session_state.messages = []
     st.session_state.session_queries = []
@@ -116,11 +117,13 @@ if prompt := st.chat_input("Ask anything..."):
     # Track query for profile update
     st.session_state.session_queries.append(prompt)
 
-    # Process with orchestrator
+    # Process with orchestrator — pass user_id so the per-user
+    # ConversationBuffer (sliding window + rolling summary) kicks in.
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             resp = orch.process(
                 query=prompt,
+                user_id=user_id,
                 user_profile=profile,
                 verbose=False,
             )
@@ -132,10 +135,13 @@ if prompt := st.chat_input("Ask anything..."):
         metadata = {
             "routing": f"{icon}",
             "decision": resp.routing_decision,
+            "routed_by": resp.routed_by,
             "model": resp.model_used,
             "latency": f"{resp.latency_ms:.0f} ms",
             "context_note": resp.context_note or "(none)",
-            "classification": resp.classification,
+            "ml_prediction": resp.ml_prediction or "(not used)",
+            "classification": resp.classification or "(not used)",
+            "buffer": resp.buffer_state or "(no buffer)",
         }
 
         with st.expander("🔍 Routing Details"):
@@ -156,6 +162,7 @@ with col1:
     if st.button("🗑️ Clear Chat"):
         st.session_state.messages = []
         st.session_state.session_queries = []
+        orch.clear_buffer(user_id)
         st.rerun()
 
 with col2:

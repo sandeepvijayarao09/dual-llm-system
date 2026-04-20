@@ -49,16 +49,30 @@ def print_response(resp, verbose: bool = False) -> None:
     if verbose:
         icon = "🏠" if "small" in resp.routing_decision else "☁️"
         print(
-            f"{icon} Routed to: {resp.routing_decision} | "
+            f"{icon} Routed to: {resp.routing_decision} "
+            f"(by {resp.routed_by}) | "
             f"Model: {resp.model_used} | "
             f"Latency: {resp.latency_ms:.0f} ms"
         )
+        if resp.ml_prediction:
+            ml = resp.ml_prediction
+            print(
+                f"   ML router → {ml.get('decision')} "
+                f"(conf={ml.get('confidence')}, probs={ml.get('probs')})"
+            )
         if resp.classification:
             clf = resp.classification
             print(
-                f"   Classifier → complexity={clf.get('complexity')} | "
+                f"   LLM classifier → complexity={clf.get('complexity')} | "
                 f"intent={clf.get('intent')} | "
                 f"confidence={clf.get('confidence')}"
+            )
+        if resp.buffer_state:
+            bs = resp.buffer_state
+            print(
+                f"   Buffer → {bs.get('recent_turn_count')} recent msgs, "
+                f"summary={'yes' if bs.get('has_summary') else 'no'} "
+                f"({bs.get('summary_chars', 0)} chars)"
             )
         if resp.context_note:
             print(f"   Context note added ✅")
@@ -99,7 +113,6 @@ def run_interactive(orch: Orchestrator, user_id: str, verbose: bool) -> None:
     else:
         print("  Welcome! Your profile will adapt as we chat.\n")
 
-    history: list[dict] = []
     session_queries: list[str] = []    # track queries for profile update
 
     while True:
@@ -129,29 +142,23 @@ def run_interactive(orch: Orchestrator, user_id: str, verbose: bool) -> None:
             continue
 
         if user_input.lower() == "clear":
-            history.clear()
+            orch.clear_buffer(user_id)
             print("Conversation history cleared.\n")
             continue
 
         # Track query for session-end profile update
         session_queries.append(user_input)
 
+        # user_id makes the orchestrator use its per-user ConversationBuffer
+        # (sliding window + rolling summary) — we don't manage history here.
         resp = orch.process(
             user_input,
-            history=history if history else None,
+            user_id=user_id,
             user_profile=user_profile,
             verbose=verbose,
         )
 
         print_response(resp, verbose)
-
-        # Update conversation history
-        history.append({"role": "user", "content": user_input})
-        history.append({"role": "assistant", "content": resp.answer})
-
-        # Keep last 10 turns
-        if len(history) > 20:
-            history = history[-20:]
 
 
 def _end_session(
