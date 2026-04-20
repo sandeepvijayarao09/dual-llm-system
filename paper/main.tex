@@ -1,0 +1,640 @@
+\documentclass{article}
+
+% Un-anonymized preprint for course submission.
+\usepackage[preprint]{neurips_2026}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  framesep=3pt,
+  xleftmargin=6pt,
+  xrightmargin=6pt,
+}
+
+\title{A Dual-LLM System with Machine-Learned Cascade Routing and
+Bounded Conversational Memory}
+
+\author{%
+  Zichen Qi \\
+  Khoury College of Computer Sciences\\
+  Northeastern University\\
+  Boston, MA 02115 \\
+  \And
+  Yalin Sun \\
+  Khoury College of Computer Sciences\\
+  Northeastern University\\
+  Boston, MA 02115 \\
+  \And
+  Sandeep Vijayarao \\
+  Khoury College of Computer Sciences\\
+  Northeastern University\\
+  Boston, MA 02115 \\
+  \texttt{vijayarao.s@northeastern.edu} \\
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Large language models (LLMs) deliver strong reasoning quality, but routing every
+user query through a frontier model is wasteful for the short, factual, or
+conversational queries that dominate real traffic. We present a
+\emph{dual-LLM system} that pairs a small model (GPT-4o-mini) with a large
+model (GPT-4o) under a two-stage \emph{cascade router}: a fast offline classifier
+(TF-IDF features $+$ hand-engineered tags $+$ logistic regression) answers on
+its own when confident, and falls back to an LLM classifier only when it is
+not. For ``big'' queries, the large model produces a topic-neutral core
+answer, a one-line compression is computed, and the small model adds a
+personalized intro and closing conditioned on the user profile and the
+compressed core, so the large model's full output never re-enters the
+small-model context. To keep long conversations tractable, we introduce a
+\emph{bounded conversational buffer} that keeps the last $N$ turn-pairs
+verbatim and folds older turns into an incremental rolling summary produced
+by the small model in $\mathcal{O}(1)$ per turn. On a held-out split of our
+hand-labelled seed set the offline router reaches
+$95.5\%$ accuracy, the end-to-end system passes $38/38$ pytest integration
+tests, and the ML router eliminates the LLM classifier call on high-confidence
+queries, removing one API round-trip from the small-query path entirely.
+Code is available at \url{https://github.com/sandeepvijayarao09/dual-llm-system}.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+Consumer LLM assistants face a cost--quality trade-off on every turn:
+frontier-class models such as GPT-4o, Claude Opus, and Gemini Ultra deliver
+the highest answer quality but cost one to two orders of magnitude more per
+token than lighter-weight models such as GPT-4o-mini or Claude Haiku
+\citep{openai_pricing_2024}. Crucially, a large fraction of conversational
+traffic---greetings, short factual lookups, unit conversions,
+quick code edits---does not need a frontier model at all. Recent work on
+\emph{LLM cascades} and \emph{routers} \citep{chen_frugalgpt_2023,
+ong_routellm_2024} shows that, on public benchmarks, 40--70\% of queries
+can be handled by a much cheaper model with no measurable loss in quality,
+provided we can decide \emph{per query} which model to use.
+
+Independently, long multi-turn conversations pose a second scaling problem:
+passing the entire history into every call makes the context window grow
+linearly in turn count, inflates latency, and eventually truncates the
+earliest turns \emph{without} warning. Production frameworks such as
+LangChain have converged on \emph{summary-buffer memory}
+\citep{langchain_memory_2023}---keep the last few turns verbatim and roll the
+rest into a compact running summary. This is inexpensive if the summarizer is
+itself a small model.
+
+This paper describes a working system that combines both ideas into a single
+orchestrator. Our contributions are:
+
+\begin{enumerate}
+    \item A \textbf{two-stage cascade router} in which an offline
+    TF-IDF\,$+$\,logistic-regression classifier (the ``ML router'') answers on
+    its own when its confidence exceeds a threshold $\tau$, and otherwise
+    defers to an LLM classifier. This removes one small-LLM round-trip from
+    every confident query.
+    \item A \textbf{personalization-by-compression} dispatch for ``big'' queries:
+    the large model produces a profile-free core answer; a one-line
+    compression is computed by the small model; and the small model then
+    generates a personalized intro/closing conditioned \emph{only} on that
+    compression plus the user profile. The large model's full output never
+    re-enters the small-model context, bounding its prompt size.
+    \item A \textbf{bounded conversational buffer} that keeps the last $N$
+    turn-pairs verbatim and incrementally folds older pairs into a rolling
+    summary in $\mathcal{O}(1)$ per turn, with graceful degradation if the
+    small LLM is unavailable.
+    \item A \textbf{routing log} that stores every (query, ML decision,
+    LLM decision, final decision) tuple in SQLite, so the router can be
+    continuously retrained from production traffic, with a one-line CLI for
+    exporting an agreement-only CSV training set.
+    \item An \textbf{end-to-end open-source implementation} in Python with a
+    pytest suite covering router features, model training, the conversation
+    buffer, the classification logger, and the full orchestrator cascade
+    under mocked LLMs (38 tests; all passing).
+\end{enumerate}
+
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{LLM cascades and routers.}
+\citet{chen_frugalgpt_2023} introduced FrugalGPT, which sequentially queries
+progressively stronger LLMs and stops once a learned scoring function is
+confident in the answer. \citet{ong_routellm_2024} train a pairwise router
+that decides \emph{before} the call which of two models to use, demonstrating
+large cost reductions with minimal quality loss on MT-Bench. Commercial
+systems such as \citet{databricks_routing_2024} follow the same
+predict-then-route pattern. Our router is in this second family---we decide
+before the call---but adds a cascade inside the routing stage itself:
+cheap offline classifier first, LLM classifier only on low-confidence inputs.
+
+\paragraph{Conversational memory.}
+The Transformer architecture \citep{vaswani_attention_2017} imposes a fixed
+context window, which in a naive chat loop grows linearly with turn count.
+Practical systems typically use either a hard sliding window (drop old turns)
+or a summary buffer \citep{langchain_memory_2023, schlag_rmt_2023} in which
+evicted turns are compressed. Our ConversationBuffer is a direct descendant
+of LangChain's \texttt{ConversationSummaryBufferMemory}, but differs in two
+ways: summarization is \emph{incremental} (one call per eviction rather than
+a full re-summarization), and the buffer degrades gracefully to a
+length-tagged textual trail when no small-LLM client is wired up, which makes
+unit tests fully offline.
+
+\paragraph{Personalization in LLM assistants.}
+Prior work on persona-grounded generation
+\citep{zhang_personachat_2018, salemi_lamp_2024} shows that lightweight user
+profiles consistently improve subjective helpfulness. We implement a
+minimalist form of this: a JSON profile per user, updated once per session
+from the small LLM's inferences, and injected only into the small-LLM
+prompts---never into the large-LLM prompt. This keeps profile PII out of the
+frontier-model call path and is consistent with cost--privacy guidance in
+recent deployment surveys \citep{bommasani_foundation_2021}.
+
+\section{System Overview}
+\label{sec:system}
+
+Figure-style description: the orchestrator \citep[][\texttt{orchestrator.py}]{our_repo}
+exposes a single \texttt{process(query, user\_id)} entry point. On every
+call it (1) loads the user profile from SQLite, (2) retrieves the user's
+ConversationBuffer, (3) applies a pre-flight length check that auto-routes
+very long inputs to the large model, (4) runs the cascade router, (5)
+dispatches to the small or large pipeline, (6) appends the turn to the
+buffer, and (7) logs the decision to a SQLite routing log.
+
+\begin{table}[h]
+  \caption{System components and their responsibilities. ``S''\,=\,small LLM,
+  ``L''\,=\,large LLM, ``OFFLINE''\,=\,no network I/O.}
+  \label{tab:components}
+  \centering
+  \begin{tabular}{lll}
+    \toprule
+    Component & Calls & Role \\
+    \midrule
+    MLRouter       & OFFLINE & First-stage offline classifier (sklearn) \\
+    Classifier     & S       & Fallback LLM classifier (JSON output) \\
+    SimpleAnswerer & S       & Direct answer on the small route \\
+    Reasoner       & L       & Core answer on the big route \\
+    Personalizer   & S       & Summarize $+$ add intro/closing \\
+    ProfileUpdater & S       & Post-session profile update \\
+    ConversationBuffer & S (rare) & Bounded history + incremental summary \\
+    ClassificationLogger & OFFLINE & SQLite log of every routing decision \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Method}
+\label{sec:method}
+
+\subsection{The cascade router}
+\label{sec:router}
+
+Given a query $q$, the router outputs one of two labels,
+$y \in \{\mathrm{small}, \mathrm{big}\}$. Let $f_{\mathrm{ML}}(q)
+= (\hat{y}_{\mathrm{ML}}, c_{\mathrm{ML}})$ be the ML router, returning a
+label and a confidence score $c_{\mathrm{ML}} \in [0,1]$, and let
+$f_{\mathrm{LLM}}(q)$ be the LLM classifier. Our dispatch rule is:
+\begin{equation}
+  \mathrm{route}(q) \;=\;
+  \begin{cases}
+    \hat{y}_{\mathrm{ML}} & \text{if } c_{\mathrm{ML}} \geq \tau, \\
+    f_{\mathrm{LLM}}(q) & \text{otherwise},
+  \end{cases}
+  \label{eq:cascade}
+\end{equation}
+with $\tau = 0.65$ in our configuration. This is the \emph{minimum} dispatch
+rule that (i) never \emph{increases} latency (every ML call is cheap and can
+be skipped by setting $\tau{=}0$), (ii) is a strict improvement when
+$c_{\mathrm{ML}} \geq \tau$ has high precision, and (iii) preserves the LLM
+classifier's behaviour on ambiguous inputs.
+
+\paragraph{Features.} Rather than training a character-level or embedding-based
+model, we use a simple hybrid feature set in which hand-engineered tags are
+textually prepended to the query before it is fed into a standard TF-IDF
+vectorizer. The tags (implemented in \texttt{router/features.py}) encode:
+\begin{itemize}
+    \item length buckets \texttt{LEN\_SHORT/MEDIUM/LONG};
+    \item reasoning keywords \texttt{HAS\_REASONING\_KW} (\emph{why, how, compare,
+    prove, explain, analyze, derive, justify, contrast, evaluate, reason, design,
+    architect, optimize, debug});
+    \item factual keywords \texttt{HAS\_FACTUAL\_KW} (\emph{what is, who is,
+    when, where, capital, define, \ldots});
+    \item greeting/thanks keywords \texttt{HAS\_GREETING\_KW};
+    \item code or math presence (\texttt{HAS\_CODE}, \texttt{HAS\_MATH});
+    \item question-mark density (\texttt{Q\_SINGLE} vs.\ \texttt{Q\_MULTI});
+    \item sentence count (\texttt{MULTI\_SENTENCE}).
+\end{itemize}
+Tags are then concatenated with the raw query and the whole string is fed
+into a sklearn \texttt{Pipeline}:
+\begin{lstlisting}[language=Python]
+Pipeline([
+    ("tfidf", TfidfVectorizer(ngram_range=(1,2),
+                              min_df=1, max_features=3000,
+                              sublinear_tf=True)),
+    ("clf",   LogisticRegression(C=1.0,
+                                 class_weight="balanced",
+                                 max_iter=1000, solver="liblinear")),
+])
+\end{lstlisting}
+Concatenating tag tokens with the raw query makes them visible to both the
+unigram and bigram features without requiring a custom featurizer, and keeps
+the whole pipeline trivially serializable with \texttt{joblib}.
+
+\paragraph{Seed data and training.} We hand-labelled a seed of 108 queries
+spanning greetings, short factual lookups, unit conversions,
+proofs, system design, research synthesis, and code debugging
+(\texttt{router/seed\_data.py}). Training (\texttt{router/train.py}) does an
+80/20 stratified split, fits the pipeline, reports metrics, then refits on
+the full dataset and serializes to
+\texttt{router/models/router\_v0.joblib}. The trainer also accepts an
+\texttt{--extra} CSV argument, which is intended to ingest the
+agreement-only export from the routing log; this is the continuous-learning
+path (see \S\ref{sec:log}).
+
+\subsection{Personalization by compression}
+\label{sec:compress}
+
+On the ``big'' route we do not simply append the large model's output to a
+personalization prompt, because that would (a) force the large model's
+full output through the small model's context on \emph{every} subsequent
+turn (via the conversation buffer), and (b) expose any user PII in the
+personalization prompt to the frontier-model call. Instead we do:
+\begin{enumerate}
+    \item $a = \mathrm{Reasoner}(q)$ \hfill (large LLM, no profile)
+    \item $s = \mathrm{Summarize}(a)$ \hfill (small LLM, one sentence)
+    \item $(i, c) = \mathrm{AddContext}(q, \mathrm{profile}, s)$ \hfill (small LLM)
+    \item $\mathrm{final} = i \,\Vert\, a \,\Vert\, c$
+\end{enumerate}
+The small model sees only the one-sentence summary $s$, not the full $a$, so
+the personalization prompt stays bounded regardless of the length of $a$.
+The user profile is never forwarded to the large LLM.
+
+\subsection{The conversation buffer}
+\label{sec:buffer}
+
+\texttt{ConversationBuffer} (\texttt{memory/conversation\_buffer.py}) maintains
+a deque of recent messages and a string \texttt{rolling\_summary}. On each
+\texttt{add\_turn(user, asst)} it appends two messages (the user turn and
+the assistant turn). If the deque exceeds $2N$ messages (where $N$ is the
+configurable window size in \emph{turn-pairs}, default 3), the oldest
+turn-pair is popped and folded into the rolling summary:
+\begin{equation}
+  \mathrm{summary}_{t+1} \;=\; \mathrm{SmallLLM}\bigl(
+    \mathrm{summary}_t, \;(\mathrm{user}_\mathrm{old}, \mathrm{asst}_\mathrm{old})
+  \bigr),
+  \label{eq:summary}
+\end{equation}
+where the small LLM is prompted to incorporate the new turn-pair into the
+existing summary under an 80-token budget. Assistant turns longer than
+$M = 400$ characters are truncated before being fed to the summarizer to
+bound the input size of the eviction call. This makes the amortized cost of
+\texttt{add\_turn} exactly one small-LLM call per eviction, i.e.\ $\mathcal{O}(1)$
+per turn. If no small-LLM client is wired (e.g.\ in unit tests), the buffer
+falls back to a textual concatenation of evicted turns so the calling code
+remains correct.
+
+\texttt{build\_history()} returns the list of chat messages consumed by the
+LLM call: if the rolling summary is non-empty, it is prepended as a
+\texttt{system} message; the remaining verbatim turns follow in order.
+Per-user isolation is implemented in the orchestrator as a dict keyed by
+\texttt{user\_id}, so two concurrent users cannot see each other's histories.
+
+\subsection{The routing log}
+\label{sec:log}
+
+Every call to \texttt{Orchestrator.process} persists a row into
+\texttt{routing\_log.db} with fields \texttt{(ts, user\_id, query, ml\_decision,
+ml\_confidence, llm\_decision, llm\_confidence, final\_routing, model\_used)}
+(\texttt{router/classification\_logger.py}). The logger exposes an
+\texttt{export\_labeled\_csv(path, agreement\_only=True)} helper: by default
+it exports only the rows where the ML and LLM agreed (a proxy for a correct
+label), yielding a self-supervised training set for the next router
+version. This closes the loop: more traffic $\rightarrow$ more labels
+$\rightarrow$ better ML router $\rightarrow$ fewer LLM classifier calls.
+
+\section{Experiments}
+\label{sec:experiments}
+
+We evaluate four properties of the system: (1) the offline router's accuracy
+on a held-out split of the seed, (2) its qualitative behaviour on obvious
+``small'' and ``big'' queries, (3) the correctness of the cascade under
+mocked LLMs, and (4) the correctness of the conversation buffer under
+arbitrary turn sequences.
+
+\paragraph{Router accuracy.} We train on 108 hand-labelled queries with a
+stratified 80/20 split and report test accuracy on the held-out 22 examples.
+Seed labels were assigned by hand following the guideline: route ``small'' if
+a competent 7B assistant should nail it, else ``big.''
+
+\paragraph{Cascade integration tests.} We mock the small and large OpenAI
+clients with a \texttt{FakeLLM} that records every call and can be scripted
+per-prompt predicate. We then run the orchestrator through five end-to-end
+scenarios: (a) high-confidence ``small'' skips the LLM classifier, (b)
+high-confidence ``big'' routes to the large model and assembles intro/core/closing,
+(c) low-confidence ML output cascades to the LLM classifier and its label
+wins, (d) the pre-flight length check routes to the large model without
+ever calling either router, (e) per-user buffer isolation.
+
+\paragraph{Buffer correctness.} We exercise the ConversationBuffer with and
+without a summarizer: empty-state invariants, single-turn verbatim
+preservation, window-size eviction, degraded no-LLM mode, incremental
+summary update across multiple evictions, assistant truncation, and a
+schema check on \texttt{snapshot()}.
+
+\paragraph{Setup.} All experiments run on a single MacBook Pro (Apple M-series
+CPU, 16\,GB RAM) in a Python 3.14 virtualenv with scikit-learn 1.7, joblib
+1.4, and pytest 8. Router training and inference are fully offline; the
+integration tests never contact the OpenAI API (they use
+\texttt{FakeLLM}). Total wall-clock time for \texttt{pytest -q} is under 5
+seconds; router training is under 1 second on this seed set.
+
+\section{Results}
+\label{sec:results}
+
+\begin{table}[h]
+  \caption{Offline ML-router accuracy on the 22-example held-out split.
+  Numbers averaged over a single stratified split (seed=42); see
+  \S\ref{sec:limits} for why we do not report CIs.}
+  \label{tab:router}
+  \centering
+  \begin{tabular}{lc}
+    \toprule
+    Metric & Value \\
+    \midrule
+    Test accuracy & $0.955$ \\
+    Classes & $\{\mathrm{small}, \mathrm{big}\}$ \\
+    Training examples & $86$ \\
+    Test examples & $22$ \\
+    Training wall-clock & $<1$ s \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[h]
+  \caption{Pytest outcomes on the 38-test suite. All tests pass on a clean
+  checkout after \texttt{python -m router.train}.}
+  \label{tab:tests}
+  \centering
+  \begin{tabular}{llc}
+    \toprule
+    Module & Tests & Pass \\
+    \midrule
+    \texttt{test\_features.py}               & 10 & 10/10 \\
+    \texttt{test\_conversation\_buffer.py}   & 9  & 9/9 \\
+    \texttt{test\_ml\_router.py}             & 7  & 7/7 \\
+    \texttt{test\_classification\_logger.py} & 3  & 3/3 \\
+    \texttt{test\_orchestrator\_integration.py} & 9 & 9/9 \\
+    \midrule
+    Total                                    & 38 & 38/38 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Qualitative routing behaviour.} On the four canonical ``big''
+probes used in \texttt{test\_routes\_obvious\_big\_queries}
+(\emph{Prove that there are infinitely many primes}, \emph{Design a
+distributed rate limiter}, \emph{Compare Rust, Go, and Zig}, \emph{Derive
+closed-form linear regression}), the router routes 4/4 to ``big''. On the
+canonical ``small'' probes (\emph{Hi!}, \emph{What is the capital of
+Japan?}, \emph{Thanks!}, \emph{What is 2 + 2?}), it routes $\geq 3/4$ to
+``small.'' These are identical to the acceptance criteria encoded in the
+test suite.
+
+\paragraph{Cascade behaviour.} With a high-confidence small prediction the
+orchestrator calls the small LLM exactly \emph{once} (the answer), skipping
+the LLM classifier entirely. With a synthetic low-confidence ML prediction
+(forced by monkeypatching \texttt{ml\_router.predict} to return
+$c = 0.40$), the cascade calls the LLM classifier, which returns
+\texttt{routing\_decision = big}; the final \texttt{routed\_by} field in the
+response is \texttt{"llm"} and \texttt{ml\_prediction.confidence = 0.4},
+exactly as specified. The pre-flight length bypass routes a 30-token input
+to the large LLM with \texttt{routed\_by = "pre-flight"} and never touches
+either router.
+
+\paragraph{Buffer behaviour.} With \texttt{window\_size=1}, adding two
+turn-pairs produces exactly one summarizer call; adding a third produces
+two; the second summarizer call receives the previous summary (\texttt{SUM1})
+in its user message, confirming that the summary is truly incremental and
+not a re-summarization of the full trail. When the no-LLM fallback is used,
+evicted turns still appear in \texttt{rolling\_summary} as tagged plain text,
+which is enough for \texttt{build\_history()} to emit a valid history list.
+
+\paragraph{Latency decomposition.} Because the small/big LLM calls dominate
+wall-clock time, and because the ML router adds $\sim$1--2\,ms on our laptop,
+the end-to-end effect of the cascade on the small route is
+\emph{strictly one fewer round-trip}: a small-route turn that would
+previously have required \texttt{classifier $\rightarrow$ answerer} now
+requires just \texttt{answerer}, with the ML router running locally. On
+the big route, the cascade saves the classifier round-trip only when the ML
+router is confident; otherwise it adds the local ML-router cost on top of
+the original LLM classifier call. Because the ML router is
+sub-millisecond-cheap compared to a network round-trip, this is always a
+net win in expectation.
+
+\section{Discussion and Limitations}
+\label{sec:limits}
+
+\paragraph{Seed-set scale.} Our held-out test set is only 22 examples; a
+95.5\% number on 22 examples has a Wilson 95\% lower bound near 78\%. We
+therefore read the result as \emph{qualitatively strong on the axes we
+targeted}, not as a tight generalization claim. Closing this gap is the
+purpose of the routing log and its agreement-only CSV export: as real
+traffic accumulates, the next router version can be retrained on thousands
+rather than hundreds of labels.
+
+\paragraph{Two-class labels.} Our router is deliberately binary. A
+production system likely wants at least a third class for
+``retrieval/tools'' and a fourth for ``refuse/deflect,'' which would require
+a larger label set than our seed affords.
+
+\paragraph{Summarization fidelity.} The conversation buffer uses the small
+LLM to compress evicted turns. The small LLM can silently lose entities if a
+rare proper noun is introduced and then not referenced again within the
+window. Mitigation is straightforward---bump the window size, or preserve
+named-entity tokens verbatim in the summary---but we did not evaluate it
+formally here.
+
+\paragraph{Profile leakage.} We deliberately keep the user profile out of the
+large-LLM prompt, but the small LLM still sees it. If the small LLM runs on
+the same API/vendor as the large LLM, the operational privacy benefit is
+smaller than the architectural diagram suggests.
+
+\paragraph{Threshold selection.} The cascade threshold $\tau = 0.65$ was
+chosen by eye from the confidence histograms on the seed, not calibrated
+against a held-out cost/quality trade-off. A proper treatment would jointly
+optimize $\tau$ and the classifier under a cost function that prices small-
+and big-route errors differently.
+
+\section{Broader Impacts}
+\label{sec:impacts}
+
+\paragraph{Positive.} A fraction of every production chat workload is cheap
+to serve. Systems that recognize this waste less energy per answered query,
+lower the entry cost for student- and research-scale deployments, and
+reduce latency for the simple queries that users make most frequently.
+
+\paragraph{Negative.} A routing system that silently downgrades to a smaller
+model can surprise users if quality varies visibly. Additionally, the
+routing log is a per-query transcript and is therefore PII-sensitive;
+deployments that enable the continuous-learning CSV export should treat the
+log with the same retention, access, and consent controls as the underlying
+conversation store. Our released code uses a local SQLite file with no
+remote shipping and emits a warning on missing PII controls, but downstream
+users must make deployment-specific decisions.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We showed that a $\sim$200-line offline classifier, trained on 108
+hand-labelled examples and wired as the first stage of a cascade, reaches
+95.5\% test accuracy on our seed and is strong enough in practice to skip
+the LLM classifier on confident queries, cutting one API round-trip from
+the common path. Paired with a bounded conversation buffer that
+incrementally summarizes evicted turns, the resulting dual-LLM system
+routes a long-running multi-user chat workload to the right model with
+bounded per-turn cost. The full system (router, buffer, orchestrator, log,
+and demo UI) is open-source and validated by a 38-test pytest suite.
+
+\begin{ack}
+We thank the instructors and teaching staff of our course at Northeastern
+University for framing this as a final project with a clear
+presentation/report split, which forced the system to be \emph{both}
+demonstrable and documentable.
+
+\textbf{Funding and competing interests.} This work was performed as
+coursework; the authors received no external funding and declare no
+competing interests.
+\end{ack}
+
+\section*{References}
+\small
+
+\begin{thebibliography}{9}
+
+\bibitem{chen_frugalgpt_2023}
+Chen, L., Zaharia, M., \& Zou, J. (2023).
+FrugalGPT: How to use large language models while reducing cost and
+improving performance. \emph{arXiv preprint arXiv:2305.05176}.
+
+\bibitem{ong_routellm_2024}
+Ong, I., Almahairi, A., Wu, V., Chiang, W.-L., Wu, T., Gonzalez, J.~E.,
+Kadous, M.~W., \& Stoica, I. (2024).
+RouteLLM: Learning to route LLMs with preference data.
+\emph{arXiv preprint arXiv:2406.18665}.
+
+\bibitem{databricks_routing_2024}
+Databricks. (2024).
+LLM Inference Performance Engineering: Model routing and cascades.
+Technical blog post.
+
+\bibitem{vaswani_attention_2017}
+Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.~N.,
+Kaiser, {\L}., \& Polosukhin, I. (2017).
+Attention is all you need. In \emph{Advances in Neural Information Processing
+Systems 30}.
+
+\bibitem{langchain_memory_2023}
+LangChain. (2023).
+ConversationSummaryBufferMemory --- LangChain documentation.
+\url{https://python.langchain.com/docs/modules/memory/types/summary_buffer}.
+
+\bibitem{schlag_rmt_2023}
+Schlag, I., Irie, K., \& Schmidhuber, J. (2023).
+Linear transformers are secretly fast weight programmers.
+In \emph{International Conference on Machine Learning}.
+
+\bibitem{zhang_personachat_2018}
+Zhang, S., Dinan, E., Urbanek, J., Szlam, A., Kiela, D., \& Weston, J. (2018).
+Personalizing dialogue agents: I have a dog, do you have pets too?
+In \emph{ACL}.
+
+\bibitem{salemi_lamp_2024}
+Salemi, A., Mysore, S., Bendersky, M., \& Zamani, H. (2024).
+LaMP: When large language models meet personalization.
+In \emph{ACL}.
+
+\bibitem{bommasani_foundation_2021}
+Bommasani, R. et al. (2021).
+On the opportunities and risks of foundation models.
+\emph{arXiv preprint arXiv:2108.07258}.
+
+\bibitem{openai_pricing_2024}
+OpenAI. (2024).
+Model pricing --- GPT-4o and GPT-4o-mini.
+\url{https://openai.com/api/pricing/}.
+
+\bibitem{our_repo}
+Qi, Z., Sun, Y., \& Vijayarao, S. (2026).
+dual-llm-system: source code.
+\url{https://github.com/sandeepvijayarao09/dual-llm-system}.
+
+\end{thebibliography}
+
+\appendix
+
+\section{Reproduction instructions}
+\label{app:repro}
+
+\begin{lstlisting}[language=bash]
+git clone https://github.com/sandeepvijayarao09/dual-llm-system
+cd dual-llm-system
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# Train the v0 router (reproduces Table 1).
+python -m router.train
+
+# Run the full test suite (reproduces Table 2).
+pytest -q
+
+# Launch the demo UI (requires OPENAI_API_KEY in .env).
+streamlit run app.py
+\end{lstlisting}
+
+\section{Key configuration defaults}
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  Constant & Value \\
+  \midrule
+  Small LLM model                    & \texttt{gpt-4o-mini} \\
+  Large LLM model                    & \texttt{gpt-4o} \\
+  \texttt{ML\_ROUTER\_CONFIDENCE\_THRESHOLD} $\tau$ & $0.65$ \\
+  \texttt{CONFIDENCE\_THRESHOLD}     & $0.70$ (LLM-classifier upgrade) \\
+  \texttt{LARGE\_INPUT\_THRESHOLD}   & $200$ tokens \\
+  \texttt{CONVERSATION\_WINDOW\_SIZE} $N$ & $3$ turn-pairs \\
+  \texttt{max\_assistant\_chars} $M$ & $400$ chars \\
+  TF-IDF \texttt{ngram\_range}       & $(1,2)$ \\
+  LogisticRegression \texttt{C}      & $1.0$ \\
+  Seed size                          & $108$ queries \\
+  Train/test split                   & $80/20$ stratified \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Threats to validity}
+
+Our seed set was authored by the same team that wrote the router, so label
+bias correlates with implementation bias. The 22-example held-out split is
+small and the split seed is fixed. The FakeLLM-based integration tests
+validate control flow but not real model quality. All three caveats point at
+the same next step: an online A/B evaluation against real traffic, with the
+agreement-only log export feeding router v1.
+
+\newpage
+\input{checklist.tex}
+
+\end{document}
