@@ -31,12 +31,19 @@ Output schema (all fields required):
   "confidence":       <float 0.0–1.0>,
   "requires_tools":   <true|false>,
   "sensitive":        <true|false>,
-  "routing_decision": "small" | "big"
+  "routing_decision": "small" | "big",
+  "profile_relevant": <true|false>
 }
 
 Routing rules:
 - "small" : complexity=simple, confidence≥0.75, no tools needed, not sensitive
 - "big"   : complexity=moderate OR complex OR requires_tools=true OR sensitive=true
+
+profile_relevant rules (does this query BENEFIT from knowing who the user is?):
+- true  : career advice, learning paths, recommendations, explanations where expertise level
+          matters, creative tasks, personalised suggestions, domain-specific guidance
+- false : greetings, pure math, universal facts, generic how-to, code debugging with
+          no context dependency, weather, definitions
 
 Output ONLY the raw JSON. No explanation."""
 
@@ -49,6 +56,7 @@ class ClassificationResult:
     requires_tools: bool = False
     sensitive: bool = False
     routing_decision: str = "big"
+    profile_relevant: bool = False
     raw: dict = field(default_factory=dict)
 
 
@@ -83,6 +91,7 @@ class Classifier:
                 requires_tools=bool(data.get("requires_tools", False)),
                 sensitive=bool(data.get("sensitive", False)),
                 routing_decision=data.get("routing_decision", "big"),
+                profile_relevant=bool(data.get("profile_relevant", False)),
                 raw=data,
             )
         except (json.JSONDecodeError, ValueError):

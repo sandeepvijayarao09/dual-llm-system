@@ -176,9 +176,21 @@ class Orchestrator:
             # ── Step 2: Route (ML → LLM cascade) ───────────────────────────
             routing, routed_by, classification, ml_pred = self._decide_route(query)
 
+            # Only inject profile when the query actually benefits from it.
+            # LLM classifier sets profile_relevant explicitly; ML router defaults
+            # to True for "big" (complex queries) and False for "small" (simple).
+            if routed_by == "ml":
+                profile_relevant = (routing == "big")
+            else:
+                profile_relevant = classification.get("profile_relevant", False)
+
+            effective_profile = user_profile if profile_relevant else None
+            if user_profile and not profile_relevant:
+                logger.info("Profile not injected — not relevant for this query")
+
             # ── Step 3: Dispatch ───────────────────────────────────────────
             if routing == "small":
-                answer = self.answerer.answer(query, effective_history, user_profile)
+                answer = self.answerer.answer(query, effective_history, effective_profile)
                 resp = OrchestratorResponse(
                     answer=answer,
                     routing_decision="small",
@@ -191,7 +203,7 @@ class Orchestrator:
                 )
             else:
                 resp = self._route_big(
-                    query, effective_history, user_profile,
+                    query, effective_history, effective_profile,
                     "big", routed_by, start, classification, ml_pred,
                 )
 
@@ -283,7 +295,8 @@ class Orchestrator:
              (query + profile + 1-line summary)
           4. Final = intro + core + closing
         """
-        core_answer = self.reasoner.reason(query, history)
+        # Step 1: Large LLM — core reasoning with lightweight audience hint
+        core_answer = self.reasoner.reason(query, history, user_profile=user_profile)
 
         answer_summary = self.context_adder.summarize(core_answer)
         logger.debug("Answer summary: %s", answer_summary)
