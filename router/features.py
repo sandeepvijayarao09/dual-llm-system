@@ -50,6 +50,13 @@ MATH_PATTERNS = [
     r"\bintegral\b", r"\bderivative\b", r"\bprobability\b",
 ]
 
+SELF_REF_PATTERNS = [
+    r"\bmy\s+(name|background|interests|domain|expertise|profile|goals?|skills?)\b",
+    r"\bwho\s+am\s+i\b",
+    r"\bwhat\s+(do\s+i|am\s+i|should\s+i)\b",
+    r"\babout\s+me\b",
+]
+
 
 def _has_any(text_lower: str, patterns: list[str]) -> bool:
     return any(re.search(p, text_lower) for p in patterns)
@@ -95,6 +102,8 @@ def encode_text(query: str) -> str:
         tags.append("HAS_FACTUAL_KW")
     if _has_any(q_lower, GREETING_KW_PATTERNS):
         tags.append("HAS_GREETING_KW")
+    if _has_any(q_lower, SELF_REF_PATTERNS):
+        tags.append("HAS_SELF_REF")
 
     # Question marks
     q_count = q.count("?")

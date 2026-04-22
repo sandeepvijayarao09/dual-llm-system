@@ -41,9 +41,12 @@ Routing rules:
 
 profile_relevant rules (does this query BENEFIT from knowing who the user is?):
 - true  : career advice, learning paths, recommendations, explanations where expertise level
-          matters, creative tasks, personalised suggestions, domain-specific guidance
+          matters, creative tasks, personalised suggestions, domain-specific guidance,
+          ANY query containing first-person pronouns about the user themselves
+          (e.g. "what is my name", "who am I", "what are my interests", "tell me about me",
+          "what do I know", "what should I learn", "what is my background")
 - false : greetings, pure math, universal facts, generic how-to, code debugging with
-          no context dependency, weather, definitions
+          no context dependency, weather, definitions, facts about the external world
 
 Output ONLY the raw JSON. No explanation."""
 

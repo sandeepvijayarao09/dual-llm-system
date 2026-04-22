@@ -184,6 +184,13 @@ class Orchestrator:
             else:
                 profile_relevant = classification.get("profile_relevant", False)
 
+            # Hard override: queries about the user themselves ALWAYS get profile.
+            # The classifier may miss these since they look like simple factual
+            # lookups but the answer literally lives in the profile.
+            if not profile_relevant and user_profile and self._is_self_referential(query):
+                profile_relevant = True
+                logger.info("Profile override: self-referential query detected")
+
             effective_profile = user_profile if profile_relevant else None
             if user_profile and not profile_relevant:
                 logger.info("Profile not injected — not relevant for this query")
@@ -366,6 +373,32 @@ class Orchestrator:
         except Exception as exc:                              # pragma: no cover
             logger.warning("Failed to load ML router (%s) — falling back.", exc)
             return None
+
+    @staticmethod
+    def _is_self_referential(query: str) -> bool:
+        """
+        Return True if the query is asking about the user themselves —
+        i.e. the answer lives in the user profile, not in world knowledge.
+
+        Examples that return True:
+            "what is my name"
+            "who am I"
+            "what are my interests"
+            "tell me about me"
+            "what do I know"
+            "what should I learn next"
+        """
+        import re
+        q = query.lower().strip()
+        SELF_REF_PATTERNS = [
+            r"\bmy\s+(name|background|interests|domain|expertise|profile|goals?|skills?|topics?)\b",
+            r"\bwho\s+am\s+i\b",
+            r"\btell\s+me\s+about\s+me\b",
+            r"\bwhat\s+(do\s+i|am\s+i|should\s+i)\b",
+            r"\babout\s+me\b",
+            r"\bmy\s+info\b",
+        ]
+        return any(re.search(p, q) for p in SELF_REF_PATTERNS)
 
     @staticmethod
     def _ms(start: float) -> float:
