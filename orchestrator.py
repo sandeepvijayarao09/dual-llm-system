@@ -163,6 +163,33 @@ class Orchestrator:
         start = time.time()
 
         try:
+            # ── Step 0: Slash-command overrides ───────────────────────────
+            # /large <query>  → skip all routing, go directly to Large LLM
+            # /small <query>  → skip all routing, go directly to Small LLM
+            slash, query = self._parse_slash(query)
+            if slash == "large":
+                logger.info("Slash override: /large — forcing Large LLM")
+                resp = self._route_big(
+                    query, effective_history, user_profile,
+                    "forced:large", "slash", start,
+                )
+                self._finalize(user_id, buffer, query, resp)
+                return resp
+            if slash == "small":
+                logger.info("Slash override: /small — forcing Small LLM")
+                answer = self.answerer.answer(query, effective_history, user_profile)
+                resp = OrchestratorResponse(
+                    answer=answer,
+                    routing_decision="forced:small",
+                    routed_by="slash",
+                    model_used=self.small_llm.model,
+                    context_note="",
+                    classification={},
+                    latency_ms=self._ms(start),
+                )
+                self._finalize(user_id, buffer, query, resp)
+                return resp
+
             # ── Step 1: Pre-flight ─────────────────────────────────────────
             if len(query.split()) > LARGE_INPUT_THRESHOLD:
                 logger.info("Pre-flight: long query — routing directly to Large LLM")
@@ -379,6 +406,30 @@ class Orchestrator:
         except Exception as exc:                              # pragma: no cover
             logger.warning("Failed to load ML router (%s) — falling back.", exc)
             return None
+
+    @staticmethod
+    def _parse_slash(query: str) -> tuple[str, str]:
+        """
+        Detect slash-command prefixes and strip them from the query.
+
+        Supported commands:
+            /large <query>  → ("large", "<query>")
+            /small <query>  → ("small", "<query>")
+            anything else   → ("", original_query)
+
+        Examples:
+            "/large explain quantum entanglement" → ("large", "explain quantum entanglement")
+            "/large"                             → ("large", "")
+            "/small what is 2+2"                 → ("small", "what is 2+2")
+            "what is 2+2"                        → ("",      "what is 2+2")
+        """
+        stripped = query.strip()
+        for cmd in ("large", "small"):
+            prefix = f"/{cmd}"
+            if stripped.lower().startswith(prefix):
+                remainder = stripped[len(prefix):].strip()
+                return cmd, remainder
+        return "", query
 
     @staticmethod
     def _is_self_referential(query: str) -> bool:

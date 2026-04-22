@@ -108,7 +108,8 @@ for msg in st.session_state.messages:
                 st.json(msg["metadata"])
 
 # Chat input
-if prompt := st.chat_input("Ask anything..."):
+st.caption("💡 Slash commands: `/large <query>` — force Large LLM &nbsp;|&nbsp; `/small <query>` — force Small LLM")
+if prompt := st.chat_input("Ask anything... (or use /large /small to force a model)"):
     # Show user message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -130,8 +131,17 @@ if prompt := st.chat_input("Ask anything..."):
 
         st.markdown(resp.answer)
 
-        # Show routing metadata
-        icon = "🏠 Small LLM (GPT-4o Mini)" if "small" in resp.routing_decision else "☁️ Large LLM (GPT-4o)"
+        # Routing badge
+        rd = resp.routing_decision
+        if rd == "forced:large":
+            icon = "⚡ Forced → Large LLM (GPT-4o)"
+        elif rd == "forced:small":
+            icon = "⚡ Forced → Small LLM (GPT-4o Mini)"
+        elif "small" in rd:
+            icon = "🏠 Small LLM (GPT-4o Mini)"
+        else:
+            icon = "☁️ Large LLM (GPT-4o)"
+
         metadata = {
             "routing": f"{icon}",
             "decision": resp.routing_decision,
