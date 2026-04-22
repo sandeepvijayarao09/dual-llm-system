@@ -192,7 +192,13 @@ class Orchestrator:
                 logger.info("Profile override: self-referential query detected")
 
             effective_profile = user_profile if profile_relevant else None
-            if user_profile and not profile_relevant:
+
+            # Even when profile is skipped, pass a name-only stub for greetings
+            # so the model can say "Hey Alex!" without receiving the full profile.
+            if not profile_relevant and user_profile and user_profile.get("name"):
+                effective_profile = {"name": user_profile["name"]}
+                logger.info("Profile: name-only stub injected for greeting/simple query")
+            elif user_profile and not profile_relevant:
                 logger.info("Profile not injected — not relevant for this query")
 
             # ── Step 3: Dispatch ───────────────────────────────────────────

@@ -7,14 +7,20 @@ The model decides how to adapt — no hardcoded rules.
 """
 
 import json
+from datetime import date
 from llm.small_llm import SmallLLM
 
-ANSWERER_SYSTEM = """You are a helpful, concise assistant.
+def _today() -> str:
+    return date.today().strftime("%B %d, %Y")   # e.g. "April 21, 2026"
+
+ANSWERER_SYSTEM = f"""You are a helpful, concise assistant.
 Answer the user's question directly and clearly.
 Keep responses brief unless detail is clearly needed.
-Do not add unnecessary caveats or padding."""
+Do not add unnecessary caveats or padding.
+Today's date is {{today}}.
+If a user_name is provided, use it naturally in greetings. Otherwise don't guess it."""
 
-ANSWERER_SYSTEM_WITH_PROFILE = """You are a helpful, concise assistant with full awareness of who you are talking to.
+ANSWERER_SYSTEM_WITH_PROFILE = f"""You are a helpful, concise assistant with full awareness of who you are talking to.
 
 The user's profile is embedded directly in their message inside [User context: ...].
 Use it to tailor your answer — do NOT ask for information that is already in the profile.
@@ -27,6 +33,7 @@ CRITICAL RULES:
 - Match format to their preferred_format (bullets / prose / plain).
 - Never ask the user to clarify things already stated in their profile.
 
+Today's date is {{today}}.
 Keep responses concise unless detail is clearly needed."""
 
 
@@ -41,11 +48,12 @@ class SimpleAnswerer:
         user_profile: dict | None = None,
     ) -> str:
         """Generate a direct answer using the Small LLM."""
+        today = _today()
         if user_profile:
-            system = ANSWERER_SYSTEM_WITH_PROFILE
+            system = ANSWERER_SYSTEM_WITH_PROFILE.format(today=today)
             augmented_query = self._augment_query(query, user_profile)
         else:
-            system = ANSWERER_SYSTEM
+            system = ANSWERER_SYSTEM.format(today=today)
             augmented_query = query
 
         return self.llm.complete(

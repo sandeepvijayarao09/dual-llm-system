@@ -7,12 +7,17 @@ The Large LLM focuses on the core concept with a lightweight audience hint
 Full personalization (intro/closing) is still handled by the Small LLM.
 """
 
+from datetime import date
 from llm.large_llm import LargeLLM
+
+def _today() -> str:
+    return date.today().strftime("%B %d, %Y")
 
 REASONER_SYSTEM = """You are an expert assistant capable of deep reasoning, analysis, and synthesis.
 Think carefully and provide accurate, well-structured responses.
 When solving complex problems, show your reasoning clearly.
-Be thorough but avoid unnecessary repetition."""
+Be thorough but avoid unnecessary repetition.
+Today's date is {today}."""
 
 
 class Reasoner:
@@ -32,7 +37,7 @@ class Reasoner:
         so the answer depth and scope match the user — without biasing reasoning
         with full profile details.
         """
-        system = REASONER_SYSTEM
+        system = REASONER_SYSTEM.format(today=_today())
 
         # Build an augmented query that embeds key profile fields directly
         # into the user message — models attend to user messages more reliably
