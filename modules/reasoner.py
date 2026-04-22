@@ -34,25 +34,53 @@ class Reasoner:
         """
         system = REASONER_SYSTEM
 
-        if user_profile:
-            hints = []
-            if user_profile.get("expertise"):
-                hints.append(f"expertise={user_profile['expertise']}")
-            if user_profile.get("domain"):
-                hints.append(f"domain={user_profile['domain']}")
-            if user_profile.get("preferred_format"):
-                hints.append(f"format={user_profile['preferred_format']}")
-            if hints:
-                system += (
-                    f"\n\nAudience hint: {', '.join(hints)}. "
-                    "Tailor the depth, scope, and vocabulary of your answer accordingly. "
-                    "Only cover what is relevant to this audience's domain."
-                )
+        # Build an augmented query that embeds key profile fields directly
+        # into the user message — models attend to user messages more reliably
+        # than system-prompt hints for open-ended questions.
+        augmented_query = self._augment_query(query, user_profile)
 
         return self.llm.complete(
             system=system,
-            user_message=query,
+            user_message=augmented_query,
             history=history,
             use_thinking=use_thinking,
             max_tokens=4096,
+        )
+
+    # ── Helpers ───────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _augment_query(query: str, user_profile: dict | None) -> str:
+        """
+        Embed a compact user-context block into the query when a profile exists.
+        Only includes fields that are actually set — keeps the injection minimal.
+        Skips augmentation for queries that already contain enough specificity.
+        """
+        if not user_profile:
+            return query
+
+        parts = []
+        if user_profile.get("name"):
+            parts.append(f"Name: {user_profile['name']}")
+        if user_profile.get("expertise"):
+            parts.append(f"Expertise: {user_profile['expertise']}")
+        if user_profile.get("domain"):
+            parts.append(f"Domain: {user_profile['domain']}")
+        if user_profile.get("interests"):
+            interests = user_profile["interests"]
+            if isinstance(interests, list):
+                parts.append(f"Interests: {', '.join(interests[:5])}")
+        if user_profile.get("background"):
+            parts.append(f"Background: {user_profile['background']}")
+        if user_profile.get("preferred_format"):
+            parts.append(f"Preferred format: {user_profile['preferred_format']}")
+
+        if not parts:
+            return query
+
+        context_block = "\n".join(parts)
+        return (
+            f"{query}\n\n"
+            f"[User context — use this to tailor your answer specifically to this person:\n"
+            f"{context_block}]"
         )

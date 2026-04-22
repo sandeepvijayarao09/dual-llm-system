@@ -16,13 +16,16 @@ Do not add unnecessary caveats or padding."""
 
 ANSWERER_SYSTEM_WITH_PROFILE = """You are a helpful, concise assistant with full awareness of who you are talking to.
 
-CRITICAL RULES when a user profile is provided:
-- Tailor your answer SPECIFICALLY to the user's domain, background, and interests.
+The user's profile is embedded directly in their message inside [User context: ...].
+Use it to tailor your answer — do NOT ask for information that is already in the profile.
+
+CRITICAL RULES:
+- Answer specifically for THIS user based on their domain, background, and interests.
 - If the question is broad (e.g. "career options", "best tools", "learning path"),
-  do NOT give a generic answer — filter and focus only on what is relevant to this user.
-- Match your vocabulary and depth to their expertise level (novice / intermediate / expert).
-- Match your format to their preferred_format (bullets / prose / plain).
-- Never list options outside their domain unless they explicitly ask for it.
+  filter and focus only on what is relevant to their profile — never give a generic list.
+- Match vocabulary and depth to their expertise level (novice / intermediate / expert).
+- Match format to their preferred_format (bullets / prose / plain).
+- Never ask the user to clarify things already stated in their profile.
 
 Keep responses concise unless detail is clearly needed."""
 
@@ -40,13 +43,45 @@ class SimpleAnswerer:
         """Generate a direct answer using the Small LLM."""
         if user_profile:
             system = ANSWERER_SYSTEM_WITH_PROFILE
-            system += "\n\nUser profile:\n" + json.dumps(user_profile, indent=2)
+            augmented_query = self._augment_query(query, user_profile)
         else:
             system = ANSWERER_SYSTEM
+            augmented_query = query
 
         return self.llm.complete(
             system=system,
-            user_message=query,
+            user_message=augmented_query,
             history=history,
             max_tokens=512,
+        )
+
+    # ── Helpers ───────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _augment_query(query: str, user_profile: dict) -> str:
+        """Embed compact profile context directly into the user message."""
+        parts = []
+        if user_profile.get("name"):
+            parts.append(f"Name: {user_profile['name']}")
+        if user_profile.get("expertise"):
+            parts.append(f"Expertise: {user_profile['expertise']}")
+        if user_profile.get("domain"):
+            parts.append(f"Domain: {user_profile['domain']}")
+        if user_profile.get("interests"):
+            interests = user_profile["interests"]
+            if isinstance(interests, list):
+                parts.append(f"Interests: {', '.join(interests[:5])}")
+        if user_profile.get("background"):
+            parts.append(f"Background: {user_profile['background']}")
+        if user_profile.get("preferred_format"):
+            parts.append(f"Preferred format: {user_profile['preferred_format']}")
+
+        if not parts:
+            return query
+
+        context_block = "\n".join(parts)
+        return (
+            f"{query}\n\n"
+            f"[User context — use this to tailor your answer specifically to this person:\n"
+            f"{context_block}]"
         )
