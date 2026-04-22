@@ -18,6 +18,19 @@ Tag taxonomy:
     HAS_FACTUAL_KW   : what is, who is, when did, where is, define
     HAS_GREETING_KW  : hi, hello, hey, thanks, thank you, good morning
     Q_MULTI     : multiple '?' in query (compound question)
+    HAS_CREATIVE_KW  : joke, poem, story, pun, haiku, limerick, riddle,
+                       tagline, metaphor, rhyme, fiction, narrative,
+                       creative, write a
+    HAS_OPINION_KW   : best, better, worse, should i, recommend, vs,
+                       versus, opinion, preferred, favorite, worth it,
+                       pros and cons, trade-off, tradeoff
+    HAS_DEEP_WHAT    : query starts with "what is" AND word_count > 5
+                       (signals philosophical/opinion question, not a
+                       simple factual lookup)
+    HAS_IMPACT_KW    : impact, effect, implication, consequence, affect,
+                       influence, cause, result in, lead to
+    HAS_RESEARCH_KW  : research, literature, studies show, paper, findings,
+                       evidence, survey, meta-analysis, according to
 """
 
 from __future__ import annotations
@@ -55,6 +68,33 @@ SELF_REF_PATTERNS = [
     r"\bwho\s+am\s+i\b",
     r"\bwhat\s+(do\s+i|am\s+i|should\s+i)\b",
     r"\babout\s+me\b",
+]
+
+CREATIVE_KW_PATTERNS = [
+    r"\bjoke\b", r"\bpoem\b", r"\bstory\b", r"\bpun\b",
+    r"\bhaiku\b", r"\blimerick\b", r"\briddle\b", r"\btagline\b",
+    r"\bmetaphor\b", r"\brhyme\b", r"\bfiction\b", r"\bnarrative\b",
+    r"\bcreative\b", r"\bwrite\s+a\b",
+]
+
+OPINION_KW_PATTERNS = [
+    r"\bbest\b", r"\bbetter\b", r"\bworse\b", r"\bshould\s+i\b",
+    r"\brecommend\b", r"\bvs\b", r"\bversus\b", r"\bopinion\b",
+    r"\bpreferred\b", r"\bfavorite\b", r"\bfavourite\b",
+    r"\bworth\s+it\b", r"\bpros\s+and\s+cons\b",
+    r"\btrade-off\b", r"\btradeoff\b",
+]
+
+IMPACT_KW_PATTERNS = [
+    r"\bimpact\b", r"\beffect\b", r"\bimplication\b", r"\bconsequence\b",
+    r"\baffect\b", r"\binfluence\b", r"\bcause\b", r"\bresult\s+in\b",
+    r"\blead\s+to\b",
+]
+
+RESEARCH_KW_PATTERNS = [
+    r"\bresearch\b", r"\bliterature\b", r"\bstudies\s+show\b",
+    r"\bpaper\b", r"\bfindings\b", r"\bevidence\b", r"\bsurvey\b",
+    r"\bmeta-analysis\b", r"\baccording\s+to\b",
 ]
 
 
@@ -104,6 +144,20 @@ def encode_text(query: str) -> str:
         tags.append("HAS_GREETING_KW")
     if _has_any(q_lower, SELF_REF_PATTERNS):
         tags.append("HAS_SELF_REF")
+
+    # New tags — creative, opinion, deep-what, impact, research
+    if _has_any(q_lower, CREATIVE_KW_PATTERNS):
+        tags.append("HAS_CREATIVE_KW")
+    if _has_any(q_lower, OPINION_KW_PATTERNS):
+        tags.append("HAS_OPINION_KW")
+    # HAS_DEEP_WHAT: "what is ..." with more than 5 words total
+    # signals an abstract philosophical question, not a simple factual lookup
+    if re.search(r"^\s*what\s+is\b", q_lower) and word_count > 5:
+        tags.append("HAS_DEEP_WHAT")
+    if _has_any(q_lower, IMPACT_KW_PATTERNS):
+        tags.append("HAS_IMPACT_KW")
+    if _has_any(q_lower, RESEARCH_KW_PATTERNS):
+        tags.append("HAS_RESEARCH_KW")
 
     # Question marks
     q_count = q.count("?")

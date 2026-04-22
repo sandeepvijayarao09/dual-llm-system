@@ -40,16 +40,17 @@ DEFAULT_OUT = os.path.join("router", "models", "router_v0.joblib")
 def _build_pipeline() -> Pipeline:
     return Pipeline([
         ("tfidf", TfidfVectorizer(
-            ngram_range=(1, 2),
+            ngram_range=(1, 3),       # add trigrams
             min_df=1,
-            max_features=3000,
+            max_features=5000,        # larger vocab
             sublinear_tf=True,
+            analyzer="word",
         )),
         ("clf", LogisticRegression(
-            C=1.0,
+            C=2.0,                    # slightly less regularization
             class_weight="balanced",
-            max_iter=1000,
-            solver="liblinear",
+            max_iter=2000,
+            solver="lbfgs",           # better for larger feature sets
         )),
     ])
 
