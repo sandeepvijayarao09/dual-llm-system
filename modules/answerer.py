@@ -46,8 +46,11 @@ class SimpleAnswerer:
         query: str,
         history: list[dict] | None = None,
         user_profile: dict | None = None,
-    ) -> str:
-        """Generate a direct answer using the Small LLM."""
+    ) -> tuple[str, dict]:
+        """
+        Generate a direct answer using the Small LLM.
+        Returns (answer, prompt_debug) where prompt_debug has the exact prompts sent.
+        """
         today = _today()
         if user_profile:
             system = ANSWERER_SYSTEM_WITH_PROFILE.format(today=today)
@@ -56,12 +59,18 @@ class SimpleAnswerer:
             system = ANSWERER_SYSTEM.format(today=today)
             augmented_query = query
 
-        return self.llm.complete(
+        result = self.llm.complete(
             system=system,
             user_message=augmented_query,
             history=history,
             max_tokens=512,
         )
+        prompt_debug = {
+            "model": self.llm.model,
+            "system": system,
+            "user": augmented_query,
+        }
+        return result, prompt_debug
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 

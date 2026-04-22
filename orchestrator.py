@@ -57,13 +57,14 @@ class OrchestratorResponse:
     """Structured response returned by the orchestrator for every query."""
     answer: str
     routing_decision: str        # "small" | "big" | "pre-flight:large-input"
-    routed_by: str               # "ml" | "llm" | "pre-flight" | "none"
+    routed_by: str               # "ml" | "llm" | "pre-flight" | "slash" | "none"
     model_used: str
     context_note: str
     classification: dict = field(default_factory=dict)
     ml_prediction: dict = field(default_factory=dict)    # {decision, confidence, probs}
     latency_ms: float = 0.0
     buffer_state: dict = field(default_factory=dict)
+    prompts_sent: dict = field(default_factory=dict)     # exact prompts sent to each model
     error: str | None = None
 
 
@@ -177,7 +178,7 @@ class Orchestrator:
                 return resp
             if slash == "small":
                 logger.info("Slash override: /small — forcing Small LLM")
-                answer = self.answerer.answer(query, effective_history, user_profile)
+                answer, prompt_debug = self.answerer.answer(query, effective_history, user_profile)
                 resp = OrchestratorResponse(
                     answer=answer,
                     routing_decision="forced:small",
@@ -186,6 +187,7 @@ class Orchestrator:
                     context_note="",
                     classification={},
                     latency_ms=self._ms(start),
+                    prompts_sent={"small_llm": prompt_debug},
                 )
                 self._finalize(user_id, buffer, query, resp)
                 return resp
@@ -230,7 +232,7 @@ class Orchestrator:
 
             # ── Step 3: Dispatch ───────────────────────────────────────────
             if routing == "small":
-                answer = self.answerer.answer(query, effective_history, effective_profile)
+                answer, prompt_debug = self.answerer.answer(query, effective_history, effective_profile)
                 resp = OrchestratorResponse(
                     answer=answer,
                     routing_decision="small",
@@ -240,6 +242,7 @@ class Orchestrator:
                     classification=classification,
                     ml_prediction=ml_pred,
                     latency_ms=self._ms(start),
+                    prompts_sent={"small_llm": prompt_debug},
                 )
             else:
                 resp = self._route_big(
@@ -336,11 +339,13 @@ class Orchestrator:
           4. Final = intro + core + closing
         """
         # Step 1: Large LLM — core reasoning with lightweight audience hint
-        core_answer = self.reasoner.reason(query, history, user_profile=user_profile)
+        core_answer, reasoner_prompt = self.reasoner.reason(query, history, user_profile=user_profile)
 
+        # Step 2: Small LLM — 1-line summary
         answer_summary = self.context_adder.summarize(core_answer)
         logger.debug("Answer summary: %s", answer_summary)
 
+        # Step 3: Small LLM — personalized intro + closing
         context = self.context_adder.add_context(query, user_profile, answer_summary)
         intro = context.get("intro", "")
         closing = context.get("closing", "")
@@ -354,6 +359,13 @@ class Orchestrator:
 
         final_answer = "\n".join(parts)
 
+        import json as _json
+        personalizer_user_msg = (
+            f"User profile:\n{_json.dumps(user_profile, indent=2)}\n\n"
+            f"User asked: {query}\n\n"
+            f"Answer summary: {answer_summary}"
+        ) if user_profile else f"User asked: {query}\n\nAnswer summary: {answer_summary}"
+
         return OrchestratorResponse(
             answer=final_answer,
             routing_decision=routing,
@@ -363,6 +375,19 @@ class Orchestrator:
             classification=classification or {},
             ml_prediction=ml_prediction or {},
             latency_ms=self._ms(start),
+            prompts_sent={
+                "large_llm (reasoner)": reasoner_prompt,
+                "small_llm (summarizer)": {
+                    "model": self.small_llm.model,
+                    "system": "Summarize the following text in exactly one sentence. Output only the summary.",
+                    "user": core_answer[:300] + ("..." if len(core_answer) > 300 else ""),
+                },
+                "small_llm (personalizer)": {
+                    "model": self.small_llm.model,
+                    "system": "(CONTEXT_SYSTEM — generates INTRO/CLOSING)",
+                    "user": personalizer_user_msg,
+                },
+            },
         )
 
     # ── Post-turn bookkeeping ────────────────────────────────────────────────

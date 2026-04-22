@@ -44,13 +44,19 @@ class Reasoner:
         # than system-prompt hints for open-ended questions.
         augmented_query = self._augment_query(query, user_profile)
 
-        return self.llm.complete(
+        result = self.llm.complete(
             system=system,
             user_message=augmented_query,
             history=history,
             use_thinking=use_thinking,
             max_tokens=4096,
         )
+        prompt_debug = {
+            "model": self.llm.model,
+            "system": system,
+            "user": augmented_query,
+        }
+        return result, prompt_debug
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 

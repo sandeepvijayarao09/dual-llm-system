@@ -157,6 +157,17 @@ if prompt := st.chat_input("Ask anything... (or use /large /small to force a mod
         with st.expander("🔍 Routing Details"):
             st.json(metadata)
 
+        if resp.prompts_sent:
+            with st.expander("📤 Prompts Sent to Models"):
+                for label, prompt in resp.prompts_sent.items():
+                    st.markdown(f"**{label}**")
+                    st.markdown(f"🔧 **Model:** `{prompt.get('model', '?')}`")
+                    st.markdown("📋 **System prompt:**")
+                    st.code(prompt.get("system", ""), language="text")
+                    st.markdown("💬 **User message:**")
+                    st.code(prompt.get("user", ""), language="text")
+                    st.markdown("---")
+
     # Save assistant response
     st.session_state.messages.append({
         "role": "assistant",
