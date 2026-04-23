@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A Dual-LLM System with Cascade Routing</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/white.css" />
+  <style>
+    /* ── Brand palette ──────────────────────────────────── */
+    :root {
+      --red:    #C0392B;
+      --black:  #111111;
+      --white:  #FFFFFF;
+      --gray:   #f4f4f4;
+      --border: #e0e0e0;
+      --text:   #1a1a1a;
+    }
+
+    /* ── Global resets ──────────────────────────────────── */
+    .reveal { font-family: 'Segoe UI', Arial, sans-serif; color: var(--text); }
+    .reveal h1, .reveal h2, .reveal h3 { font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+    .reveal section { text-align: left; }
+    .reveal ul { list-style: none; padding-left: 0; margin: 0; }
+    .reveal ul li { padding: 6px 0 6px 28px; position: relative; font-size: 0.88em; line-height: 1.45; }
+    .reveal ul li::before { content: "■"; color: var(--red); position: absolute; left: 0; font-size: 0.75em; top: 8px; }
+    .reveal table { width: 100%; border-collapse: collapse; font-size: 0.82em; }
+    .reveal table th { background: var(--black); color: var(--white); padding: 10px 14px; text-align: left; font-weight: 700; }
+    .reveal table td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+    .reveal table tr:nth-child(even) td { background: #e8ecf0; }
+    .reveal table tr:nth-child(odd) td { background: var(--white); }
+    .reveal .slides section { padding: 32px 56px; }
+
+    /* ── Title slide ────────────────────────────────────── */
+    .title-slide { background: var(--black) !important; }
+    .title-slide * { color: var(--white) !important; }
+    .title-slide h1 { font-size: 2.4em; font-weight: 900; line-height: 1.15; }
+    .title-slide .accent { color: var(--red) !important; }
+    .title-slide .subtitle { font-size: 0.9em; color: #bbbbbb !important; margin-top: 12px; letter-spacing: 0.05em; }
+    .title-slide .authors { margin-top: 38px; font-size: 0.85em; color: #dddddd !important; }
+    .title-slide .authors p { margin: 4px 0; }
+    .title-slide .github { margin-top: 14px; font-size: 0.78em; color: #aaaaaa !important; }
+
+    /* ── Content slides ─────────────────────────────────── */
+    .content-slide h2 {
+      font-size: 1.35em;
+      color: var(--black);
+      border-bottom: 2px solid var(--red);
+      padding-bottom: 10px;
+      margin-bottom: 22px;
+    }
+    .slide-body { display: flex; gap: 40px; align-items: flex-start; }
+    .col { flex: 1; }
+
+    /* ── Cards ──────────────────────────────────────────── */
+    .cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 10px; }
+    .cards-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .card .icon { font-size: 1.5em; margin-bottom: 8px; }
+    .card h4 { font-size: 0.85em; font-weight: 700; margin: 0 0 7px; color: var(--black); }
+    .card p  { font-size: 0.75em; color: #555; margin: 0; line-height: 1.4; }
+
+    /* ── Highlight boxes ────────────────────────────────── */
+    .callout {
+      background: #fdf0f0;
+      border-left: 4px solid var(--red);
+      border-radius: 4px;
+      padding: 14px 18px;
+      margin-top: 16px;
+      font-size: 0.82em;
+      line-height: 1.55;
+    }
+    .callout strong { color: var(--red); }
+    .callout-dark {
+      background: var(--black);
+      color: var(--white);
+      border-radius: 6px;
+      padding: 16px 20px;
+      font-size: 0.82em;
+      margin-top: 14px;
+      text-align: center;
+    }
+    .callout-dark code { color: #ffa0a0; font-size: 1.05em; }
+
+    /* ── Bar chart (cost) ───────────────────────────────── */
+    .bar-wrap { font-size: 0.82em; margin-top: 10px; }
+    .bar-row { display: flex; align-items: center; margin: 10px 0; }
+    .bar-label { width: 160px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+    .bar { height: 34px; border-radius: 3px; display: flex; align-items: center;
+           padding-left: 12px; font-weight: 700; color: white; font-size: 0.95em; }
+    .bar-large { background: var(--red); width: 82%; }
+    .bar-small { background: #555; width: 5%; }
+
+    /* ── Architecture diagram ───────────────────────────── */
+    .arch { display: flex; flex-direction: column; gap: 6px; align-items: stretch; font-size: 0.78em; }
+    .arch-box {
+      border-radius: 5px; padding: 10px 16px; text-align: center;
+      font-weight: 600; line-height: 1.4; position: relative;
+    }
+    .arch-l0 { background: #2C3E50; color: white; }
+    .arch-l1 { background: #1A5276; color: white; }
+    .arch-l2 { background: #1F618D; color: white; }
+    .arch-arrow { text-align: center; color: #888; font-size: 1.1em; }
+    .arch-split { display: flex; gap: 10px; }
+    .arch-small { background: #1E8449; color: white; flex: 1; border-radius: 5px; padding: 10px; text-align: center; font-weight: 600; font-size: 0.9em; }
+    .arch-large { background: #C0392B; color: white; flex: 1; border-radius: 5px; padding: 10px; text-align: center; font-weight: 600; font-size: 0.9em; }
+    .arch-side { display: flex; gap: 10px; }
+    .arch-mem  { background: #6C3483; color: white; flex: 1; border-radius: 5px; padding: 9px; text-align: center; font-size: 0.85em; font-weight: 600; }
+    .arch-log  { background: #784212; color: white; flex: 1; border-radius: 5px; padding: 9px; text-align: center; font-size: 0.85em; font-weight: 600; }
+    .arch-label { font-size: 0.7em; color: #999; margin-top: 2px; font-weight: 400; }
+
+    /* ── Pipeline (personalization) ─────────────────────── */
+    .pipeline { display: flex; align-items: flex-start; gap: 0; margin-top: 14px; }
+    .pipe-step { flex: 1; text-align: center; position: relative; }
+    .pipe-step::after {
+      content: "→"; position: absolute; right: -14px; top: 22px;
+      font-size: 1.3em; color: var(--red); font-weight: 900;
+    }
+    .pipe-step:last-child::after { display: none; }
+    .pipe-dot { width: 48px; height: 48px; background: var(--red); border-radius: 50%;
+                margin: 0 auto 10px; display: flex; align-items: center;
+                justify-content: center; color: white; font-size: 1.2em; }
+    .pipe-title { font-weight: 700; font-size: 0.82em; color: var(--black); }
+    .pipe-desc  { font-size: 0.72em; color: #555; margin-top: 4px; line-height: 1.35; }
+
+    /* ── Stats blocks ───────────────────────────────────── */
+    .stats { display: flex; gap: 14px; margin-top: 10px; }
+    .stat-box {
+      flex: 1; background: var(--black); color: white; border-radius: 8px;
+      padding: 16px 12px; text-align: center;
+    }
+    .stat-num { font-size: 1.8em; font-weight: 900; color: var(--red); }
+    .stat-lbl { font-size: 0.7em; color: #bbb; margin-top: 4px; }
+
+    /* ── Formula box ────────────────────────────────────── */
+    .formula-box {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 18px 24px;
+      margin-top: 14px;
+      text-align: center;
+      font-size: 0.9em;
+    }
+    .formula-box .formula-title { font-weight: 700; margin-bottom: 10px; font-size: 0.88em; }
+    .formula { font-family: 'Courier New', monospace; font-size: 1.1em; color: var(--black); }
+
+    /* ── Tag table ──────────────────────────────────────── */
+    .tag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.73em; margin-top: 8px; }
+    .tag-row { display: flex; gap: 8px; align-items: center; padding: 5px 0;
+               border-bottom: 1px solid #f0f0f0; }
+    .tag-name { font-family: monospace; background: #f0f0f0; padding: 2px 7px;
+                border-radius: 3px; font-size: 0.9em; flex-shrink: 0; color: #C0392B; font-weight: 700; }
+    .tag-signal { color: #555; flex: 1; }
+    .tag-hint  { font-weight: 700; font-size: 0.85em; flex-shrink: 0; }
+    .hint-big   { color: var(--red); }
+    .hint-small { color: #27AE60; }
+    .hint-neut  { color: #888; }
+
+    /* ── Category results ───────────────────────────────── */
+    .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; font-size: 0.72em; }
+    .cat-row  { display: flex; justify-content: space-between; padding: 4px 0;
+                border-bottom: 1px solid #f4f4f4; align-items: center; }
+    .cat-name { color: var(--text); }
+    .cat-acc  { font-weight: 700; }
+    .acc-100  { color: #27AE60; }
+    .acc-hi   { color: #F39C12; }
+    .acc-mid  { color: #E67E22; }
+    .acc-lo   { color: var(--red); }
+
+    /* ── Before/after table ─────────────────────────────── */
+    .compare { display: flex; gap: 16px; margin-top: 12px; }
+    .compare-col { flex: 1; background: #f8f8f8; border-radius: 8px; padding: 16px; }
+    .compare-col h4 { font-size: 0.85em; font-weight: 800; text-transform: uppercase;
+                      letter-spacing: 0.05em; margin-bottom: 12px; }
+    .compare-col.v0 h4 { color: #888; }
+    .compare-col.v1 h4 { color: var(--red); }
+    .compare-row { display: flex; justify-content: space-between; padding: 6px 0;
+                   border-bottom: 1px solid #e8e8e8; font-size: 0.8em; }
+    .compare-row .val { font-weight: 700; }
+
+    /* ── Memory diagram ─────────────────────────────────── */
+    .mem-diagram { background: #f8f8f8; border-radius: 8px; padding: 14px 18px; margin-top: 12px; font-size: 0.78em; }
+    .mem-row { display: flex; gap: 10px; margin: 5px 0; align-items: center; }
+    .mem-tag { font-weight: 700; color: #888; width: 70px; flex-shrink: 0; font-size: 0.85em; }
+    .mem-bar { height: 28px; border-radius: 3px; display: flex; align-items: center;
+               padding-left: 10px; font-size: 0.85em; }
+    .mem-evicted { background: #ddd; color: #888; flex: 0 0 90px; text-decoration: line-through; }
+    .mem-verbatim { background: #1A5276; color: white; flex: 1; }
+    .mem-summary  { background: var(--red); color: white; flex: 1; }
+
+    /* ── Progress bar (cascade) ─────────────────────────── */
+    .pbar-wrap { margin: 8px 0; }
+    .pbar-label { font-size: 0.78em; font-weight: 600; margin-bottom: 4px; }
+    .pbar { height: 22px; background: #eee; border-radius: 3px; overflow: hidden; }
+    .pbar-fill { height: 100%; display: flex; align-items: center; padding-left: 8px;
+                 font-size: 0.75em; font-weight: 700; color: white; }
+
+    /* ── Test table ─────────────────────────────────────── */
+    .test-grid { display: flex; gap: 12px; margin-top: 10px; }
+    .test-box  { flex: 1; background: #111; color: white; border-radius: 8px; padding: 14px;
+                 text-align: center; }
+    .test-box .num { font-size: 1.6em; font-weight: 900; color: #27AE60; }
+    .test-box .lbl { font-size: 0.68em; color: #bbb; margin-top: 4px; }
+
+    /* ── Slide number ───────────────────────────────────── */
+    .slide-num { position: absolute; bottom: 14px; right: 20px; font-size: 0.7em; color: #bbb; }
+
+    /* ── Reveal overrides ───────────────────────────────── */
+    .reveal .progress { color: var(--red); }
+    .reveal .controls { color: var(--red); }
+    .reveal .slide-number { color: #888; background: none; }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 1 — TITLE
+═══════════════════════════════════════════════════════ -->
+<section class="title-slide" style="background:#111; text-align:center; padding:60px 80px;">
+  <h1>A Dual-LLM System with <span class="accent">Cascade<br>Routing</span></h1>
+  <p class="subtitle">Machine-Learned Intelligence &amp; Bounded Memory</p>
+  <div class="authors">
+    <p>Zichen Qi &nbsp;·&nbsp; Yalin Sun &nbsp;·&nbsp; Sandeep Vijayarao</p>
+    <p>Northeastern University &nbsp;|&nbsp; CS Final Project</p>
+  </div>
+  <p class="github">⬡ &nbsp;github.com/sandeepvijayarao09/dual-llm-system &nbsp;&nbsp; · &nbsp;&nbsp; April 2026</p>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 2 — PROBLEM: COST OF INTELLIGENCE
+═══════════════════════════════════════════════════════ -->
+<section class="content-slide">
+  <h2>The Cost of Intelligence</h2>
+  <div class="slide-body">
+    <div class="col">
+      <ul>
+        <li>Frontier models cost <strong>25×</strong> more per token than compact models.</li>
+        <li>Most chat traffic includes greetings or simple lookups.</li>
+        <li>Advanced reasoning models are over-utilized unnecessarily.</li>
+        <li>Linear context growth leads to massive latency spikes.</li>
+        <li>Efficiency requires separating simple tasks from complex ones.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="bar-wrap">
+        <strong style="font-size:0.85em;">Cost Comparison (per 1M Tokens)</strong>
+        <div style="margin-top:14px;">
+          <div class="bar-row">
+            <span class="bar-label">GPT-4o (Large)</span>
+            <div class="bar bar-large">$15.00</div>
+          </div>
+          <div class="bar-row" style="margin-top:10px;">
+            <span class="bar-label">GPT-4o-mini (Small)</span>
+            <div class="bar bar-small">&nbsp;</div>
+            <span style="font-size:0.78em;color:#555;margin-left:8px;">$0.60</span>
+          </div>
+        </div>
+        <p style="font-size:0.7em;color:#888;margin-top:10px;font-style:italic;">
+          25× cost disparity based on current OpenAI pricing.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 3 — PROJECT CONTRIBUTIONS
+═══════════════════════════════════════════════════════ -->
+<section class="content-slide">
+  <h2>Project Contributions</h2>
+  <div class="cards" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="card">
+      <div class="icon">🔀</div>
+      <h4>Three-Layer Cascade</h4>
+      <p>Pre-flight + offline TF-IDF ML router + LLM-based JSON routing fallback — 85.3% handled at zero API cost.</p>
+    </div>
+    <div class="card">
+      <div class="icon">🪄</div>
+      <h4>Personalization-by-Compression</h4>
+      <p>4-stage pipeline preserving privacy: Large LLM never sees the user profile directly.</p>
+    </div>
+    <div class="card">
+      <div class="icon">🧮</div>
+      <h4>Bounded Memory</h4>
+      <p>Verbatim N-turn buffer with O(1) rolling summarization per turn. Amortized constant cost.</p>
+    </div>
+  </div>
+  <div class="cards-2" style="margin-top:12px;">
+    <div class="card">
+      <div class="icon">🗄️</div>
+      <h4>SQLite Logging &amp; Self-Improvement</h4>
+      <p>Automated self-supervised dataset generation — every routing decision logged for continuous model improvement.</p>
+    </div>
+    <div class="card">
+      <div class="icon">&lt;/&gt;</div>
+      <h4>Open Source + 38-Test Suite</h4>
+      <p>Full implementation with comprehensive pytest coverage (17 router + 9 memory + 12 integration tests) for production readiness.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 4 — LANDSCAPE & DIFFERENTIATION
+═══════════════════════════════════════════════════════ -->
+<section class="content-slide">
+  <h2>Landscape &amp; Differentiation</h2>
+  <table style="margin-top:10px;">
+    <thead>
+      <tr>
+        <th>Prior Work</th>
+        <th>Core Approach</th>
+        <th>Our Differentiation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>FrugalGPT</strong> (2023)</td>
+        <td>Sequential LLM cascades.</td>
+        <td>Added offline ML pre-stage — zero API cost for 85% of queries.</td>
+      </tr>
+      <tr>
+        <td><strong>RouteLLM</strong> (2024)</td>
+        <td>Pairwise preference training.</td>
+        <td>TF-IDF speed + prompt logic — no preference data needed.</td>
+      </tr>
+      <tr>
+        <td><strong>LangChain Memory</strong></td>
+        <td>Standard summary buffers.</td>
+        <td>Fixed O(1) incremental update with no-LLM fallback.</td>
+      </tr>
+      <tr>
+        <td><strong>LaMP</strong> (2024)</td>
+        <td>RAG-based personalization.</td>
+        <td>Privacy-first summary routing — Large LLM never sees profile.</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="callout" style="margin-top:16px;">
+    <strong>Key insight:</strong> No prior system combines offline ML routing + privacy-preserving personalization + bounded O(1) memory in a single deployable API-only stack.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 5 — SYSTEM ARCHITECTURE
+═══════════════════════════════════════════════════════ -->
+<section class="content-slide">
+  <h2>System Architecture</h2>
+  <div class="slide-body">
+    <div class="col" style="flex:1.1;">
+      <div style="font-size:0.72em;font-weight:700;color:var(--red);letter-spacing:0.08em;margin-bottom:8px;">ROUTING — decide which model handles the query</div>
+      <div class="arch">
+        <div class="arch-box arch-l0">
+          Layer 0 — Pre-flight Length Check
+          <div class="arch-label">query &gt; 2,000 words → skip to Large LLM instantly</div>
+        </div>
+        <div class="arch-arrow">↓ normal</div>
+        <div class="arch-box arch-l1">
+          Layer 1 — ML Router &nbsp;<span style="font-weight:400;font-size:0.85em;">(offline, ~0 ms, no API call)</span>
+          <div class="arch-label">TF-IDF (1–3 grams, 5k feats) + 16 feature tags + Logistic Regression</div>
+        </div>
+        <div class="arch-arrow">↓ conf &lt; 0.65 → cascade</div>
+        <div class="arch-box arch-l2">
+          Layer 2 — LLM Classifier &nbsp;<span style="font-weight:400;font-size:0.85em;">(GPT-4o-mini, JSON mode)</span>
+          <div class="arch-label">routing_decision · profile_relevant · confidence</div>
+        </div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-split">
+          <div class="arch-small">Small LLM<div class="arch-label" style="color:#aee;">GPT-4o-mini · SimpleAnswerer</div></div>
+          <div class="arch-large">Large LLM<div class="arch-label" style="color:#faa;">GPT-4o · Reasoner Pipeline</div></div>
+        </div>
+      </div>
+      <div style="font-size:0.68em;font-weight:700;color:#6C3483;letter-spacing:0.08em;margin-top:14px;">BACKGROUND — runs every turn automatically</div>
+      <div class="arch-side" style="margin-top:6px;">
+        <div class="arch-mem">ConversationBuffer<div class="arch-label" style="color:#dbb;">bounded memory</div></div>
+        <div class="arch-log">Routing Log (SQLite)<div class="arch-label" style="color:#e4c;">training data for next router</div></div>
+      </div>
+    </div>
+    <div class="col">
+      <ul>
+        <li>Pre-flight length check bypasses short/long extremes.</li>
+        <li>ML Router uses TF-IDF and Logistic Regression — <strong>~0 ms</strong>.</li>
+        <li>LLM Classifier acts as high-accuracy fallback — only <strong>14.7%</strong> of queries.</li>
+        <li>Reasoner (Large LLM) handles core logic <strong>without profiles</strong>.</li>
+        <li>Personalizer (Small LLM) assembles the final user-facing response.</li>
+        <li>SQLite Logger captures every decision for self-supervised retraining.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 6 — STAGE 1: CASCADE ROUTER
+═══════════════════════════════════════════════════════ -->
+<section class="content-slide">
+  <h2>Stage 1: Cascade Router</h2>
+  <div class="slide-body">
+    <div class="col" style="flex:1.1;">
+      <div style="background:#f4f0ff;border-radius:8px;padding:16px 18px;font-size:0.78em;">
+        <div style="font-weight:700;margin-bottom:10px;color:#444;">ML Pipeline — How One Query Becomes a Routing Decision</div>
+        <div style="display:flex;gap:12px;align-items:stretch;">
+          <div style="flex:1;background:white;border-radius:6px;padding:10px;font-size:0.9em;">
+            <div style="font-weight:700;color:#6C3483;margin-bottom:6px;">① Feature Extraction</div>
+            <div style="font-family:monospace;font-size:0.85em;color:#555;">
+              encode("why is ML hard?")<br>
+              → <span style="color:var(--red);">LEN_SHORT HAS_REASONING_KW Q_SINGLE</span> why is ML hard?
+            </div>
+            <div style="margin-top:8px;color:#888;font-size:0.8em;">TF-IDF Vectorizer<br>1–3 grams · 5,000 features</div>
+          </div>
+          <div style="flex:1;background:#1A5276;color:white;border-radius:6px;padding:10px;font-size:0.9em;">
+            <div style="font-weight:700;margin-bottom:6px;">② Logistic Regression</div>
+            <div style="color:#aad4f5;font-size:0.85em;">
+              trained on 280 seed examples<br>balanced class weights<br>C=2.0, LBFGS solver
+            </div>
+            <div style="margin-top:8px;font-size:0.8em;color:#7fc;">Output: P(small), P(big)</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;background:#27AE60;color:white;border-radius:5px;padding:8px 12px;text-align:center;font-size:0.85em;font-weight:700;">
+          max(P) ≥ 0.65 → Trust ML &nbsp;|&nbsp; max(P) &lt; 0.65 → LLM Classifier fallback
+        </div>
+        <div style="margin-top:8px;font-size:0.75em;color:#888;text-align:center;">
+          Every decision → SQLite log → retrain next router version
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <strong style="font-size:0.85em;">Logistic Regression Pipeline</strong>
+      <ul style="margin-top:10px;">
+        <li>Features: 16 hand-crafted tag signals + TF-IDF weights.</li>
+        <li>Reasoning triggers: 'why', 'derive', 'analyze', 'prove'.</li>
+        <li>TF-IDF Vectorization: <strong>1–3 ngrams, 5,000 features</strong>.</li>
+        <li>Model serialized via Joblib for <strong>&lt; 5 ms latency</strong>.</li>
+        <li>Never worse than an LLM-only baseline — conservative fallback.</li>
+      </ul>
+      <div class="formula-box" style="margin-top:14px;">
+        <div class="formula-title">Dispatch Rule (τ = 0.65)</div>
+        <div class="formula">
+          route(q) = &nbsp;<strong>ŷ<sub>ML</sub></strong>&nbsp; if c<sub>ML</sub> ≥ τ<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>f<sub>LLM</sub>(q)</strong>&nbsp; otherwise
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 7 — FEATURE ENGINEERING
+═══════════════════════════════════════════════════════ -->
+<section class="content-slide">
+  <h2>Feature Engineering — 16 Routing Tags</h2>
+  <p style="font-size:0.78em;color:#555;margin-bottom:12px;">Each tag fires when its pattern matches and is prepended to the raw query before TF-IDF encoding.</p>
+  <div class="tag-grid">
+    <div>
+      <div class="tag-row"><span class="tag-name">LEN_SHORT</span><span class="tag-signal">≤ 8 words</span><span class="tag-hint hint-small">→ small</span></div>
+      <div class="tag-row"><span class="tag-name">LEN_MEDIUM</span><span class="tag-signal">9–40 words</span><span class="tag-hint hint-neut">neutral</span></div>
+      <div class="tag-row"><span class="tag-name">LEN_LONG</span><span class="tag-signal">&gt; 40 words</span><span class="tag-hint hint-big">→ big</span></div>
+      <div class="tag-row"><span class="tag-name">HAS_CODE</span><span class="tag-signal">``` · def · class · import</span><span class="tag-hint hint-big">→ big</span></div>
+      <div class="tag-row"><span class="tag-name">HAS_MATH</span><span class="tag-signal">digits+ops · \int · \sum</span><span class="tag-hint hint-big">→ big</span></div>
+      <div class="tag-row"><span class="tag-name">HAS_REASONING_KW</span><span class="tag-signal">why, how, compare, prove, analyze…</span><span class="tag-hint hint-big">→ big</span></div>
+      <div class="tag-row"><span class="tag-name">HAS_FACTUAL_KW</span><span class="tag-signal">what is, who is, when did, define…</span><span class="tag-hint hint-small">→ small</span></div>
+      <div class="tag-row"><span class="tag-name">HAS_GREETING_KW</span><span class="tag-signal">hi, hello, thanks, bye</span><span class="tag-hint hint-small">→ small</span></div>
+    </div>
+    <div>
+      <div class="tag-row"><span class="tag-name">HAS_CREATIVE_KW</span><span class="tag-signal">joke, poem, story, haiku, pun</span><span class="tag-hint hint-small">→ small</span></div>
+      <div class="tag-row"><span class="tag-name">HAS_OPINION_KW</span><span class="tag-signal">best, vs, should I, pros and cons</span><span class="tag-hint hint-big">→ big</span></div>
+      <div class="tag-row"><span class="tag-name">HAS_DEEP_WHAT</span><span class="tag-signal">"what is" + &gt; 5 words (abstract)</span><span class="tag-hint hint-big">→ big</span></div>
+      <div class="tag-row"><span class="tag-name">HAS_IMPACT_KW</span><span class="tag-signal">impact, effect, consequence</span><span class="tag-hint hint-big">→ big</span></div>
+      <div class="tag-row"><span class="tag-name">HAS_RESEARCH_KW</span><span class="tag-signal">research, literature, studies show</span><span class="tag-hint hint-big">→ big</span></div>
+      <div class="tag-row"><span class="tag-name">HAS_SELF_REF</span><span class="tag-signal">my name, who am I, about me</span><span class="tag-hint hint-neut">→ inject</span></div>
+      <div class="tag-row"><span class="tag-name">Q_MULTI</span><span class="tag-signal">≥ 2 question marks</span><span class="tag-hint hint-big">→ big</span></div>
+      <div class="tag-row"><span class="tag-name">MULTI_SENTENCE</span><span class="tag-signal">≥ 3 sentence-ending chars</span><span class="tag-hint hint-big">→ big</span></div>
+    </div>
+  </div>
+  <div class="callout" style="margin-top:12px;">
+    <strong>Example:</strong> &nbsp;encode("why is the sky blue?") → <code style="font-family:monospace;">LEN_SHORT HAS_REASONING_KW Q_SINGLE why is the sky blue?</code>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 8 — PERSONALIZATION-BY-COMPRESSION
+═══════════════════════════════════════════════════════ -->
+<section class="content-slide">
+  <h2>Personalization-by-Compression</h2>
+  <div class="pipeline" style="margin-top:24px;">
+    <div class="pipe-step">
+      <div class="pipe-dot">🧠</div>
+      <div class="pipe-title">Reason</div>
+      <div class="pipe-desc">Large LLM writes deep core answer.<br><em>No user profile.</em></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-dot">📝</div>
+      <div class="pipe-title">Summarize</div>
+      <div class="pipe-desc">Small LLM compresses core to <em>one sentence</em> (≤80 tokens).</div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-dot">👤</div>
+      <div class="pipe-title">Add Context</div>
+      <div class="pipe-desc">Small LLM injects user profile — intro + closing wrapper.</div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-dot">✅</div>
+      <div class="pipe-title">Assemble</div>
+      <div class="pipe-desc">Final output:<br><em>intro + core + "---" + closing</em></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:14px;margin-top:22px;">
+    <div class="callout" style="flex:1;margin-top:0;">
+      <strong>🔒 Privacy Win:</strong> The Large LLM <em>never sees</em> the user profile. Profile context only enters through the Small LLM wrapper — limiting exposure of personal data to the most powerful model.
+    </div>
+    <div class="callout" style="flex:1;margin-top:0;background:#f0fff4;border-color:#27AE60;">
+      <strong style="color:#27AE60;">💰 Cost Win:</strong> Large LLM output is <em>never</em> re-injected into context windows. One-sentence summary prevents exponential token growth across the personalization chain.
+    </div>
+  </div>
+  <div style="margin-top:12px;font-size:0.76em;color:#888;text-align:center;">
+    Profile injection is <strong>conditional</strong>: the LLM classifier's <code>profile_relevant</code> flag decides per-query.
+    Self-referential queries ("what is my name") always inject — hard override.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 9 — BOUNDED CONVERSATIONAL MEMORY
+═══════════════════════════════════════════════════════ -->
+<section class="content-slide">
+  <h2>Bounded Conversational Memory</h2>
+  <div class="slide-body">
+    <div class="col">
+      <strong style="font-size:0.85em;">The ConversationBuffer</strong>
+      <ul style="margin-top:10px;">
+        <li>Keeps last <strong>N = 3 turn-pairs verbatim</strong> in context.</li>
+        <li>Older turns folded into a <strong>rolling summary</strong> (≤ 80 tokens) via Small LLM.</li>
+        <li><strong>Amortized O(1)</strong> processing cost per turn.</li>
+        <li>Assistant turns truncated to <strong>400 characters</strong> before buffering.</li>
+        <li><strong>No-LLM fallback:</strong> if summarization fails, truncation-only summary used.</li>
+      </ul>
+      <div class="callout" style="margin-top:14px;">
+        <strong>Context sent to model each turn:</strong><br>
+        <em>[System]:</em> "Earlier: Alex asked about recursion, REST APIs…"<br>
+        <em>[User/Asst]:</em> turns N-2, N-1, N verbatim<br>
+        <em>[User]:</em> current query
+      </div>
+    </div>
+    <div class="col">
+      <div class="mem-diagram">
+        <div style="font-weight:700;font-size:0.85em;margin-bottom:10px;">Sliding Window Visualization</div>
+        <div class="mem-row">
+          <span class="mem-tag">Turn 4</span>
+          <div class="mem-bar mem-evicted" style="flex:0 0 110px;">evicted ✗</div>
+          <span style="margin-left:8px;font-size:0.78em;color:#888;">→ compressed to rolling summary</span>
+        </div>
+        <div style="margin:4px 0 4px 80px;padding:6px 10px;background:var(--red);color:white;font-size:0.75em;border-radius:3px;">
+          Rolling Summary (≤ 80 tokens)
+        </div>
+        <div class="mem-row">
+          <span class="mem-tag">Turn 5</span>
+          <div class="mem-bar mem-verbatim" style="flex:1;">verbatim</div>
+        </div>
+        <div class="mem-row">
+          <span class="mem-tag">Turn 6</span>
+          <div class="mem-bar mem-verbatim" style="flex:1;">verbatim</div>
+        </div>
+        <div class="mem-row">
+          <span class="mem-tag">Turn 7</span>
+          <div class="mem-bar mem-verbatim" style="flex:1;">verbatim (current)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 10 — EMPIRICAL PERFORMANCE
+═══════════════════════════════════════════════════════ -->
+<section class="content-slide">
+  <h2>Empirical Performance</h2>
+  <div class="stats">
+    <div class="stat-box">
+      <div class="stat-num">92.6%</div>
+      <div class="stat-lbl">Routing Accuracy<br>(1,000-case benchmark)</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">85.3%</div>
+      <div class="stat-lbl">ML-only rate<br>(zero API cost for routing)</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">14.7%</div>
+      <div class="stat-lbl">LLM cascade rate<br>(down from 30.8%)</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">&lt;5ms</div>
+      <div class="stat-lbl">ML router latency<br>(local CPU, no GPU)</div>
+    </div>
+  </div>
+  <div class="slide-body" style="margin-top:16px;">
+    <div class="col">
+      <strong style="font-size:0.83em;">Router Accuracy</strong>
+      <table style="margin-top:8px;">
+        <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Seed Dataset Size</td><td><strong>280 examples</strong></td></tr>
+          <tr><td>Eval Set Size</td><td><strong>1,000 queries</strong> (21 categories)</td></tr>
+          <tr><td>Held-out Accuracy (v0)</td><td>95.5% (N=22 split)</td></tr>
+          <tr><td>Benchmark Accuracy (v1)</td><td><strong>92.6%</strong> (1k benchmark)</td></tr>
+          <tr><td>F1 Score</td><td><strong>0.922</strong></td></tr>
+          <tr><td>Recall (big class)</td><td><strong>0.963</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <strong style="font-size:0.83em;">System Robustness — 38 Tests Passed</strong>
+      <div class="test-grid" style="margin-top:8px;">
+        <div class="test-box">
+          <div class="num">17/17</div>
+          <div class="lbl">Features &amp;<br>Router Tests</div>
+        </div>
+        <div class="test-box">
+          <div class="num">9/9</div>
+          <div class="lbl">Memory Buffer<br>Tests</div>
+        </div>
+        <div class="test-box">
+          <div class="num">12/12</div>
+          <div class="lbl">Integration &amp;<br>Logic Tests</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:10px;font-size:0.75em;color:#888;">
+        <strong>Result:</strong> Confident "Small" routes skip LLM classifier entirely.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 11 — PER-CATEGORY RESULTS
+═══════════════════════════════════════════════════════ -->
+<section class="content-slide">
+  <h2>Per-Category Results — 21 Categories</h2>
+  <div class="cat-grid" style="margin-top:8px;">
+    <div>
+      <div class="cat-row"><span class="cat-name">analysis</span><span class="cat-acc acc-100">100%</span></div>
+      <div class="cat-row"><span class="cat-name">career_learning</span><span class="cat-acc acc-100">100%</span></div>
+      <div class="cat-row"><span class="cat-name">comparison_technical ★</span><span class="cat-acc acc-100">100%</span></div>
+      <div class="cat-row"><span class="cat-name">compound_questions</span><span class="cat-acc acc-100">100%</span></div>
+      <div class="cat-row"><span class="cat-name">conversions</span><span class="cat-acc acc-100">100%</span></div>
+      <div class="cat-row"><span class="cat-name">definitions</span><span class="cat-acc acc-100">100%</span></div>
+      <div class="cat-row"><span class="cat-name">domain_specific</span><span class="cat-acc acc-100">100%</span></div>
+      <div class="cat-row"><span class="cat-name">math_simple</span><span class="cat-acc acc-100">100%</span></div>
+      <div class="cat-row"><span class="cat-name">multi_constraint</span><span class="cat-acc acc-100">100%</span></div>
+      <div class="cat-row"><span class="cat-name">proofs</span><span class="cat-acc acc-100">100%</span></div>
+      <div class="cat-row"><span class="cat-name">real_world_planning</span><span class="cat-acc acc-100">100%</span></div>
+    </div>
+    <div>
+      <div class="cat-row"><span class="cat-name">research_synthesis</span><span class="cat-acc acc-100">100%</span></div>
+      <div class="cat-row"><span class="cat-name">short_creative</span><span class="cat-acc acc-100">100%</span></div>
+      <div class="cat-row"><span class="cat-name">system_design</span><span class="cat-acc acc-100">100%</span></div>
+      <div class="cat-row"><span class="cat-name">factual</span><span class="cat-acc acc-hi">96.1%</span></div>
+      <div class="cat-row"><span class="cat-name">yes_no</span><span class="cat-acc acc-hi">95.6%</span></div>
+      <div class="cat-row"><span class="cat-name">greetings</span><span class="cat-acc acc-hi">93.8%</span></div>
+      <div class="cat-row"><span class="cat-name">ambiguous</span><span class="cat-acc acc-hi">90.0%</span></div>
+      <div class="cat-row"><span class="cat-name">conversational ★</span><span class="cat-acc acc-mid">80.0%</span></div>
+      <div class="cat-row"><span class="cat-name">ethical_philosophical ★</span><span class="cat-acc acc-mid">75.0%</span></div>
+      <div class="cat-row" style="border-color:var(--red);">
+        <span class="cat-name" style="color:var(--red);font-weight:700;">debug_simple ★ ← next target</span>
+        <span class="cat-acc acc-lo">33.3%</span>
+      </div>
+    </div>
+  </div>
+  <div class="callout" style="margin-top:10px;">
+    ★ New categories in Eval-1000 &nbsp;|&nbsp; <strong>14 of 21 categories at 100%</strong> &nbsp;|&nbsp; debug_simple fails because "why doesn't my CSS apply?" triggers <code>HAS_REASONING_KW</code> — fix: add <code>HAS_DEBUG_SIMPLE</code> tag
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 12 — BEFORE / AFTER IMPROVEMENT
+═══════════════════════════════════════════════════════ -->
+<section class="content-slide">
+  <h2>Before / After — v0 → v1 Improvement</h2>
+  <div class="compare">
+    <div class="compare-col v0">
+      <h4>v0 — Baseline</h4>
+      <div class="compare-row"><span>Training examples</span><span class="val">120</span></div>
+      <div class="compare-row"><span>ngram range</span><span class="val">1–2 grams</span></div>
+      <div class="compare-row"><span>TF-IDF features</span><span class="val">3,000</span></div>
+      <div class="compare-row"><span>Feature tags</span><span class="val">8 tags</span></div>
+      <div class="compare-row"><span>Accuracy</span><span class="val">88.2%</span></div>
+      <div class="compare-row"><span>Cascade rate</span><span class="val">30.8%</span></div>
+      <div class="compare-row"><span>ML-only rate</span><span class="val">69.2%</span></div>
+    </div>
+    <div style="display:flex;align-items:center;font-size:2em;color:var(--red);font-weight:900;padding:0 8px;">→</div>
+    <div class="compare-col v1">
+      <h4>v1 — Improved</h4>
+      <div class="compare-row"><span>Training examples</span><span class="val" style="color:var(--red);">280 (+133%)</span></div>
+      <div class="compare-row"><span>ngram range</span><span class="val" style="color:var(--red);">1–3 grams</span></div>
+      <div class="compare-row"><span>TF-IDF features</span><span class="val" style="color:var(--red);">5,000</span></div>
+      <div class="compare-row"><span>Feature tags</span><span class="val" style="color:var(--red);">16 tags</span></div>
+      <div class="compare-row"><span>Accuracy</span><span class="val" style="color:var(--red);">92.6% (+4.4 pp)</span></div>
+      <div class="compare-row"><span>Cascade rate</span><span class="val" style="color:var(--red);">14.7% (−16.1 pp)</span></div>
+      <div class="compare-row"><span>ML-only rate</span><span class="val" style="color:var(--red);">85.3% (+16.1 pp)</span></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:14px;margin-top:14px;">
+    <div class="callout" style="margin-top:0;flex:1;">
+      <strong>Biggest single wins:</strong> short_creative cascade 100% → 11.1% after adding <code>HAS_CREATIVE_KW</code> tag + 25 examples. &nbsp;|&nbsp; debug_simple is the remaining gap (33.3%).
+    </div>
+    <div class="callout" style="margin-top:0;flex:1;background:#f0fff4;border-color:#27AE60;">
+      <strong style="color:#27AE60;">Self-improving loop:</strong> Every routing decision is logged. Export high-confidence labels → retrain → redeploy in minutes. v2 will use real-traffic labels.
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 13 — SUMMARY & FUTURE WORK
+═══════════════════════════════════════════════════════ -->
+<section class="content-slide">
+  <h2>Summary &amp; Future Work</h2>
+  <div class="slide-body">
+    <div class="col">
+      <strong style="font-size:0.85em;">Limitations</strong>
+      <ul style="margin-top:8px;">
+        <li>Small held-out set used in v0 (N=22); v1 uses 1,000-case benchmark.</li>
+        <li>Binary labels only (Small vs Big) — fine-grained routing not yet supported.</li>
+        <li>Uncalibrated τ threshold (0.65 set empirically, not via held-out optimization).</li>
+        <li>Residual profile leakage — name stub still sent on impersonal queries.</li>
+        <li>Relies on proprietary OpenAI API — model deprecation risk.</li>
+        <li><strong>debug_simple at 33.3%</strong> — next immediate fix.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <strong style="font-size:0.85em;">Next Steps</strong>
+      <ul style="margin-top:8px;">
+        <li>Add <code>HAS_DEBUG_SIMPLE</code> tag + 30 seed examples → fix debug_simple.</li>
+        <li>Export agreement-only logs from Router v1 → retrain Router v2.</li>
+        <li>Expand to <strong>4+ routing classes</strong> (e.g., code, math, reasoning, factual).</li>
+        <li>Online A/B testing against LLM-only baseline with real users.</li>
+        <li>Port to open-weight models (Llama-3, Mistral) for API-free deployment.</li>
+        <li>Energy-efficient edge hardware deployment (Raspberry Pi / mobile).</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout-dark" style="margin-top:18px;">
+    <strong>Questions?</strong><br>
+    <span style="color:#bbb;font-size:0.85em;">Code: &nbsp;</span>
+    <code>github.com/sandeepvijayarao09/dual-llm-system</code>
+    <span style="color:#bbb;font-size:0.85em;">&nbsp; · &nbsp; Zichen Qi · Yalin Sun · Sandeep Vijayarao &nbsp; · &nbsp; April 2026</span>
+  </div>
+</section>
+
+</div><!-- .slides -->
+</div><!-- .reveal -->
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    width: 1280,
+    height: 720,
+    margin: 0.04,
+    minScale: 0.2,
+    maxScale: 2.0,
+    controls: true,
+    progress: true,
+    slideNumber: true,
+    hash: true,
+    transition: 'slide',
+    transitionSpeed: 'fast',
+    backgroundTransition: 'fade',
+  });
+</script>
+</body>
+</html>
