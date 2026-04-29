@@ -3,7 +3,7 @@ ConversationBuffer — hybrid sliding window with rolling summary.
 
 Replaces the naive "send full history every turn" pattern with:
     - Last N turns kept VERBATIM (recency matters for follow-ups)
-    - Older turns folded into a rolling summary (small LLM)
+    - EVERY turn also folded into a rolling summary (small LLM)
     - Optional per-user isolation via a dict of buffers
 
 Why this matters:
@@ -12,12 +12,15 @@ Why this matters:
     - Keeps recency intact so pronouns / follow-ups still resolve
 
 Design notes:
-    - The summary is updated incrementally (previous summary + evicted turn)
-      so we never re-read the full history.
+    - The summary is updated incrementally on EACH STEP (previous summary
+      + the just-completed turn) so the summary always reflects the full
+      conversation, even before any window eviction occurs.
+    - Because every turn is already summarized, eviction from the verbatim
+      window is loss-free — the evicted turn has already been folded in.
     - Assistant messages are truncated to 400 chars before summarization —
       we keep the gist, not the prose.
     - If no small LLM is injected, the buffer degrades to a pure window
-      (still bounded, just no summary).
+      with a crude appended record (still bounded, just no semantic summary).
 """
 
 from __future__ import annotations
@@ -52,7 +55,7 @@ class ConversationBuffer:
     """
 
     small_llm: Optional[object] = None        # duck-typed: needs .complete()
-    window_size: int = 3
+    window_size: int = 10
     max_assistant_chars: int = 400
     recent_turns: list[dict] = field(default_factory=list)
     rolling_summary: str = ""
@@ -60,16 +63,28 @@ class ConversationBuffer:
     # ── Public API ────────────────────────────────────────────────────────────
 
     def add_turn(self, user_msg: str, assistant_msg: str) -> None:
-        """Record a completed user/assistant exchange."""
-        self.recent_turns.append({"role": "user", "content": user_msg})
-        self.recent_turns.append({"role": "assistant", "content": assistant_msg})
+        """Record a completed user/assistant exchange.
 
-        # Evict in pairs while over capacity
+        Behavior:
+            1. Append the new pair to the verbatim window.
+            2. Immediately fold the new pair into the rolling summary
+               (summarizer runs at EACH step, not only on eviction).
+            3. Drop the oldest pair if the window is over capacity —
+               loss-free, because step 2 already preserved its content.
+        """
+        new_user = {"role": "user", "content": user_msg}
+        new_asst = {"role": "assistant", "content": assistant_msg}
+        self.recent_turns.append(new_user)
+        self.recent_turns.append(new_asst)
+
+        # Summarize on every step
+        self._fold_into_summary(new_user, new_asst)
+
+        # Evict in pairs while over capacity (no re-summarize — already folded)
         max_msgs = self.window_size * 2
         while len(self.recent_turns) > max_msgs:
-            evicted_user = self.recent_turns.pop(0)
-            evicted_asst = self.recent_turns.pop(0)
-            self._fold_into_summary(evicted_user, evicted_asst)
+            self.recent_turns.pop(0)   # evict user
+            self.recent_turns.pop(0)   # evict assistant
 
     def build_history(self) -> list[dict]:
         """

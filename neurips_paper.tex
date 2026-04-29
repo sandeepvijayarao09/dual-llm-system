@@ -453,9 +453,13 @@ is provided.
 \label{sec:memory}
 
 Per-user conversation history is managed by a \texttt{ConversationBuffer}
-module implementing a sliding window of three turn-pairs. When the buffer
-overflows, the oldest turn-pair is evicted and compressed into a rolling
-summary (at most 80 tokens) via a Small LLM call. The model receives:
+module implementing a sliding window of ten turn-pairs. The summarizer is
+invoked on \emph{every} turn: each completed user/assistant pair is folded
+incrementally into a rolling summary (at most 80 tokens) via a Small LLM
+call, so the summary always covers the full conversation. When the buffer
+overflows, the oldest turn-pair is dropped from the verbatim window;
+because it has already been summarized, eviction is loss-free. The model
+receives:
 \begin{enumerate}
     \item A system message containing the rolling summary (if non-empty).
     \item Verbatim user/assistant turn-pairs from the window.
@@ -743,7 +747,7 @@ Table~\ref{tab:config} summarizes all configurable parameters of the
 \texttt{LARGE\_INPUT\_THRESHOLD}         & 2000                    & Word count for Layer 0 bypass \\
 \texttt{ML\_ROUTER\_CONFIDENCE\_THRESHOLD} & 0.65                  & ML router confidence threshold \\
 \texttt{ENABLE\_ML\_ROUTER}              & \texttt{true}           & Enable/disable ML router \\
-\texttt{CONVERSATION\_WINDOW\_SIZE}      & 3                       & Verbatim turn-pairs in buffer \\
+\texttt{CONVERSATION\_WINDOW\_SIZE}      & 10                      & Verbatim turn-pairs in buffer \\
 \texttt{SMALL\_LLM\_TIMEOUT}             & 60 s                    & API timeout (Small LLM) \\
 \texttt{LARGE\_LLM\_TIMEOUT}             & 120 s                   & API timeout (Large LLM) \\
 \midrule

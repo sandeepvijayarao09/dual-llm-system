@@ -51,4 +51,4 @@ ROUTING_LOG_PATH = os.getenv("ROUTING_LOG_PATH", "routing_log.db")
 # ── Conversation Buffer (sliding window) ─────────────────────────────────────
 # Number of user+assistant PAIRS kept verbatim before being folded into a
 # rolling summary. Increase for chats where follow-ups reach further back.
-CONVERSATION_WINDOW_SIZE = int(os.getenv("CONVERSATION_WINDOW_SIZE", "3"))
+CONVERSATION_WINDOW_SIZE = int(os.getenv("CONVERSATION_WINDOW_SIZE", "10"))

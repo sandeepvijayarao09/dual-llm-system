@@ -114,9 +114,10 @@ orchestrator. Our contributions are:
     compression plus the user profile. The large model's full output never
     re-enters the small-model context, bounding its prompt size.
     \item A \textbf{bounded conversational buffer} that keeps the last $N$
-    turn-pairs verbatim and incrementally folds older pairs into a rolling
-    summary in $\mathcal{O}(1)$ per turn, with graceful degradation if the
-    small LLM is unavailable.
+    turn-pairs verbatim and runs an incremental summarizer on \emph{every}
+    turn, so the rolling summary always covers the full history in
+    $\mathcal{O}(1)$ per turn, with graceful degradation if the small LLM
+    is unavailable.
     \item A \textbf{routing log} that stores every (query, ML decision,
     LLM decision, final decision) tuple in SQLite, so the router can be
     continuously retrained from production traffic, with a one-line CLI for
@@ -287,23 +288,29 @@ The user profile is never forwarded to the large LLM.
 \texttt{ConversationBuffer} (\texttt{memory/conversation\_buffer.py}) maintains
 a deque of recent messages and a string \texttt{rolling\_summary}. On each
 \texttt{add\_turn(user, asst)} it appends two messages (the user turn and
-the assistant turn). If the deque exceeds $2N$ messages (where $N$ is the
-configurable window size in \emph{turn-pairs}, default 3), the oldest
-turn-pair is popped and folded into the rolling summary:
+the assistant turn) and \emph{immediately} folds the new pair into the
+rolling summary. The summarizer therefore runs on every step, so the
+running summary always reflects the entire conversation rather than only
+the evicted prefix:
 \begin{equation}
   \mathrm{summary}_{t+1} \;=\; \mathrm{SmallLLM}\bigl(
-    \mathrm{summary}_t, \;(\mathrm{user}_\mathrm{old}, \mathrm{asst}_\mathrm{old})
+    \mathrm{summary}_t, \;(\mathrm{user}_t, \mathrm{asst}_t)
   \bigr),
   \label{eq:summary}
 \end{equation}
 where the small LLM is prompted to incorporate the new turn-pair into the
-existing summary under an 80-token budget. Assistant turns longer than
+existing summary under an 80-token budget. If the deque exceeds $2N$
+messages (where $N$ is the configurable window size in \emph{turn-pairs},
+default $10$), the oldest turn-pair is popped from the verbatim window;
+because it has already been folded into the summary, eviction is loss-free
+and requires no additional LLM call. Assistant turns longer than
 $M = 400$ characters are truncated before being fed to the summarizer to
-bound the input size of the eviction call. This makes the amortized cost of
-\texttt{add\_turn} exactly one small-LLM call per eviction, i.e.\ $\mathcal{O}(1)$
-per turn. If no small-LLM client is wired (e.g.\ in unit tests), the buffer
-falls back to a textual concatenation of evicted turns so the calling code
-remains correct.
+bound the input size of each summarizer call. This makes the amortized
+cost of \texttt{add\_turn} exactly one small-LLM call per turn,
+i.e.\ $\mathcal{O}(1)$ per turn, with prompt size bounded by $N$
+verbatim turn-pairs plus the 80-token summary. If no small-LLM client is
+wired (e.g.\ in unit tests), the buffer falls back to a textual
+concatenation so the calling code remains correct.
 
 \texttt{build\_history()} returns the list of chat messages consumed by the
 LLM call: if the rolling summary is non-empty, it is prepended as a
@@ -423,13 +430,14 @@ exactly as specified. The pre-flight length bypass routes a 30-token input
 to the large LLM with \texttt{routed\_by = "pre-flight"} and never touches
 either router.
 
-\paragraph{Buffer behaviour.} With \texttt{window\_size=1}, adding two
-turn-pairs produces exactly one summarizer call; adding a third produces
-two; the second summarizer call receives the previous summary (\texttt{SUM1})
+\paragraph{Buffer behaviour.} With \texttt{window\_size=1}, each call to
+\texttt{add\_turn} produces exactly one summarizer call (regardless of
+eviction); adding two turn-pairs therefore produces two summarizer calls.
+The second summarizer call receives the previous summary (\texttt{SUM1})
 in its user message, confirming that the summary is truly incremental and
 not a re-summarization of the full trail. When the no-LLM fallback is used,
-evicted turns still appear in \texttt{rolling\_summary} as tagged plain text,
-which is enough for \texttt{build\_history()} to emit a valid history list.
+the rolling summary still receives an appended record on every turn, which
+is enough for \texttt{build\_history()} to emit a valid history list.
 
 \paragraph{Latency decomposition.} Because the small/big LLM calls dominate
 wall-clock time, and because the ML router adds $\sim$1--2\,ms on our laptop,
@@ -615,7 +623,7 @@ streamlit run app.py
   \texttt{ML\_ROUTER\_CONFIDENCE\_THRESHOLD} $\tau$ & $0.65$ \\
   \texttt{CONFIDENCE\_THRESHOLD}     & $0.70$ (LLM-classifier upgrade) \\
   \texttt{LARGE\_INPUT\_THRESHOLD}   & $200$ tokens \\
-  \texttt{CONVERSATION\_WINDOW\_SIZE} $N$ & $3$ turn-pairs \\
+  \texttt{CONVERSATION\_WINDOW\_SIZE} $N$ & $10$ turn-pairs \\
   \texttt{max\_assistant\_chars} $M$ & $400$ chars \\
   TF-IDF \texttt{ngram\_range}       & $(1,2)$ \\
   LogisticRegression \texttt{C}      & $1.0$ \\

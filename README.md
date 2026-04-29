@@ -199,18 +199,21 @@ Each user has a persistent profile that evolves after every session:
 Per-user sliding window prevents unbounded context growth:
 
 ```
-Turn 4 (oldest)  ──► evicted → compressed into rolling_summary (≤80 tokens)
-Turn 5           ──┐
-Turn 6           ──┤  verbatim window (last 3 turn-pairs)
-Turn 7 (current) ──┘
+Turns 1-N (older) ──► already folded into rolling_summary on each step
+Turns N+1 .. N+10 ──┐
+                   ──┤  verbatim window (last 10 turn-pairs)
+Turn N+11 (current)──┘
+
+Summarizer fires on EVERY turn (incremental, ≤80 tokens), so eviction
+from the verbatim window is loss-free.
 
 History sent to model:
   [system]: [Earlier summary: Alex asked about recursion, REST APIs...]
-  [user/asst]: turns 5-7 verbatim
+  [user/asst]: last 10 turns verbatim
   [user]: current query
 ```
 
-Configure window size: `CONVERSATION_WINDOW_SIZE=3` in `.env`
+Configure window size: `CONVERSATION_WINDOW_SIZE=10` in `.env`
 
 ---
 
@@ -378,7 +381,7 @@ All settings are in `.env` (copy from `.env.example`):
 | `ENABLE_ML_ROUTER` | `true` | Enable/disable ML router (falls back to LLM only) |
 | `ML_ROUTER_PATH` | `router/models/router_v0.joblib` | Path to trained model |
 | `ROUTING_LOG_PATH` | `routing_log.db` | SQLite log for retraining data |
-| `CONVERSATION_WINDOW_SIZE` | `3` | Turn-pairs kept verbatim in memory |
+| `CONVERSATION_WINDOW_SIZE` | `10` | Turn-pairs kept verbatim in memory (summarizer also folds every turn) |
 | `SMALL_LLM_TIMEOUT` | `60` | API timeout in seconds |
 | `LARGE_LLM_TIMEOUT` | `120` | API timeout in seconds |
 | `DB_PATH` | `profiles.db` | User profile database path |

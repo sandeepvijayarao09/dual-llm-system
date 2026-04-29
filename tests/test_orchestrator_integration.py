@@ -78,8 +78,15 @@ def test_high_confidence_small_skips_llm_classifier(orch, fake_small_llm):
     assert resp.ml_prediction["decision"] == "small"
     assert resp.classification == {}           # LLM classifier not called
     assert resp.error is None
-    # Exactly one small-LLM call = the answerer (no classifier, no summarizer)
-    assert len(fake_small_llm.calls) == 1
+    # Two small-LLM calls: (1) the answerer, (2) the per-turn summarizer
+    # that runs on every add_turn. The LLM classifier is NOT called.
+    assert len(fake_small_llm.calls) == 2
+    # The first call is the answerer (has chat history field, even if empty);
+    # the second call is the summarizer (history=None, max_tokens=120).
+    answerer_call, summarizer_call = fake_small_llm.calls
+    assert answerer_call["history"] == []
+    assert summarizer_call["history"] is None
+    assert summarizer_call["max_tokens"] == 120
 
 
 def test_high_confidence_big_routes_to_large(orch, fake_small_llm, fake_large_llm):
@@ -169,9 +176,12 @@ def test_buffer_history_fed_to_next_call(orch, fake_small_llm):
     # Second turn must see the first in history
     orch.process("What did I just ask?", user_id="u_ctx")
 
-    last_call = fake_small_llm.calls[-1]
-    assert last_call["history"] is not None
-    history_contents = [m["content"] for m in last_call["history"]]
+    # Find the answerer call for the second turn — i.e. the most recent call
+    # that has a non-None history (summarizer calls have history=None).
+    answerer_calls = [c for c in fake_small_llm.calls if c["history"] is not None]
+    assert answerer_calls, "expected at least one answerer call with history"
+    last_answerer = answerer_calls[-1]
+    history_contents = [m["content"] for m in last_answerer["history"]]
     assert any("Hi there!" in c for c in history_contents)
 
 

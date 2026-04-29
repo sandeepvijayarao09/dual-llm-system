@@ -534,16 +534,16 @@
     <div class="col">
       <strong style="font-size:0.85em;">The ConversationBuffer</strong>
       <ul style="margin-top:10px;">
-        <li>Keeps last <strong>N = 3 turn-pairs verbatim</strong> in context.</li>
-        <li>Older turns folded into a <strong>rolling summary</strong> (≤ 80 tokens) via Small LLM.</li>
-        <li><strong>Amortized O(1)</strong> processing cost per turn.</li>
+        <li>Keeps last <strong>N = 10 turn-pairs verbatim</strong> in context.</li>
+        <li><strong>Summarizer fires on every turn</strong> — rolling summary (≤ 80 tokens) always reflects the full history.</li>
+        <li>Eviction from the verbatim window is <strong>loss-free</strong> (already summarized).</li>
         <li>Assistant turns truncated to <strong>400 characters</strong> before buffering.</li>
         <li><strong>No-LLM fallback:</strong> if summarization fails, truncation-only summary used.</li>
       </ul>
       <div class="callout" style="margin-top:14px;">
         <strong>Context sent to model each turn:</strong><br>
         <em>[System]:</em> "Earlier: Alex asked about recursion, REST APIs…"<br>
-        <em>[User/Asst]:</em> turns N-2, N-1, N verbatim<br>
+        <em>[User/Asst]:</em> last 10 turns verbatim<br>
         <em>[User]:</em> current query
       </div>
     </div>
