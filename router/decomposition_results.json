@@ -1,0 +1,50 @@
+[
+  {
+    "name": "query text only (no tags)",
+    "accuracy": 0.855,
+    "acc_lo": 0.834,
+    "acc_hi": 0.876,
+    "precision_big": 0.7700348432055749,
+    "recall_big": 0.9714285714285714,
+    "f1_big": 0.8590864917395529,
+    "large_model_rate": 0.574,
+    "cascade_rate": 0.382,
+    "n": 1000
+  },
+  {
+    "name": "+ LEN_* tags only",
+    "accuracy": 0.924,
+    "acc_lo": 0.907,
+    "acc_hi": 0.94,
+    "precision_big": 0.8752475247524752,
+    "recall_big": 0.9714285714285714,
+    "f1_big": 0.9208333333333333,
+    "large_model_rate": 0.505,
+    "cascade_rate": 0.173,
+    "n": 1000
+  },
+  {
+    "name": "+ semantic tags only (no LEN_*)",
+    "accuracy": 0.859,
+    "acc_lo": 0.8379749999999999,
+    "acc_hi": 0.881,
+    "precision_big": 0.7823741007194245,
+    "recall_big": 0.9560439560439561,
+    "f1_big": 0.8605341246290802,
+    "large_model_rate": 0.556,
+    "cascade_rate": 0.295,
+    "n": 1000
+  },
+  {
+    "name": "+ all tags (production)",
+    "accuracy": 0.926,
+    "acc_lo": 0.91,
+    "acc_hi": 0.941,
+    "precision_big": 0.8848484848484849,
+    "recall_big": 0.9626373626373627,
+    "f1_big": 0.9221052631578948,
+    "large_model_rate": 0.495,
+    "cascade_rate": 0.147,
+    "n": 1000
+  }
+]

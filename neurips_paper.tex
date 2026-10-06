@@ -50,16 +50,22 @@ and Personalized Large Language Model Serving}
 % ══════════════════════════════════════════════════════════════════════════════
 \begin{abstract}
 Serving user queries with large language models (LLMs) is expensive when every
-request is unconditionally forwarded to the most capable—and most
-costly—model available. We present \system{}, a production-style dual-LLM
+request is unconditionally forwarded to the most capable---and most
+costly---model available. We present \system{}, a production-style dual-LLM
 serving architecture that routes each query through a three-layer decision
 cascade: (1) a word-count pre-flight check, (2) a zero-latency ML router
 built on TF-IDF with 16 hand-crafted feature tags and logistic regression,
 and (3) a LLM-based fallback classifier invoked only when the ML router
-is uncertain. Evaluated on 1,500 synthetically labelled queries spanning
-21 intent categories, the ML router alone handles \textbf{85.3\%} of
-queries with \textbf{92.6\%} routing accuracy, reducing the fraction that
-require an LLM routing call from 30.8\% to 14.7\%. Beyond routing, the
+is uncertain. Evaluated on 1,491 author-labelled queries spanning
+23 intent categories, the ML router alone handles \textbf{85.3\%} of
+queries with \textbf{92.6\%} routing accuracy, cutting the fraction that
+require an LLM routing call from 38.2\% to 14.7\% under a controlled ablation.
+A controlled decomposition, however, shows the gain comes almost entirely from
+three query-length buckets rather than from the thirteen semantic tags
+($+6.9$ pp vs.\ $+0.4$ pp), and a one-line word-count rule already reaches
+89.7\% on this benchmark. We trace both results to a length confound in the
+benchmark itself ($r = 0.766$ between word count and label) and report it as a
+cautionary finding for self-authored routing evaluations. Beyond routing, the
 system maintains per-user SQLite profiles and a sliding-window conversation
 buffer, injecting personalization context only when a per-query relevance
 signal deems it necessary. Every routing decision is logged, enabling a
@@ -74,8 +80,8 @@ are released at \url{https://github.com/sandeepvijayarao09/dual-llm-system}.
 The rapid adoption of LLM-powered applications has exposed a fundamental
 cost asymmetry: state-of-the-art models such as \largemdl{} are roughly
 an order of magnitude more expensive per token than compact models such as
-\smallmdl{}, yet most serving stacks route every query—including trivial
-greetings, arithmetic lookups, and one-word factual questions—to the
+\smallmdl{}, yet most serving stacks route every query---including trivial
+greetings, arithmetic lookups, and one-word factual questions---to the
 frontier model \citep{chen2023frugalgpt}. Conversely, always routing to
 the cheaper model sacrifices quality on queries that genuinely require deep
 reasoning, multi-step analysis, or synthesis across domain knowledge.
@@ -87,7 +93,11 @@ mixture-of-experts architectures \citep{shazeer2017moe,jiang2024mixtral},
 LLM-based routing with learned preferences \citep{ong2024routellm}, and
 cascade-style model selection \citep{chen2023frugalgpt}. However, these
 approaches either operate at training time, require human preference data,
-or use another LLM call for routing—each adding latency or cost.
+or depend on large-scale human preference corpora. Notably, RouteLLM's
+BERT and matrix-factorisation routers already decide without an LLM call at
+inference; our point of difference is not latency but the amount of
+supervision required---we bootstrap from a few hundred hand-written examples
+rather than tens of thousands of preference judgements.
 
 \textbf{This paper makes four contributions:}
 \begin{enumerate}
@@ -97,10 +107,11 @@ or use another LLM call for routing—each adding latency or cost.
           when the ML router's confidence is below a tuned threshold
           ($\tau_\text{ml} = 0.65$).
     \item A \textbf{feature-augmented TF-IDF router} that extends
-          bag-of-words representations with 16 hand-crafted binary tags
-          encoding linguistic signals (reasoning keywords, code presence,
-          question multiplicity, query length) that are highly predictive
-          of routing class but sparse in raw text.
+          bag-of-words representations with 16 hand-crafted binary tags,
+          together with a controlled decomposition showing that only the
+          three query-length tags carry signal: the thirteen semantic tags
+          (reasoning keywords, code presence, question multiplicity) add
+          $+0.4$ pp, which we cannot distinguish from noise.
     \item A \textbf{conditional personalization mechanism} where user
           profile context is injected into queries only when a per-query
           relevance signal warrants it, avoiding irrelevant or
@@ -111,11 +122,14 @@ or use another LLM call for routing—each adding latency or cost.
           closing the improvement loop without human annotation.
 \end{enumerate}
 
-\system{} is evaluated on a 1,500-case synthetic benchmark spanning 21
+\system{} is evaluated on a 1,491-case synthetic benchmark spanning 23
 intent categories, achieving 92.6\% routing accuracy with a 14.7\% LLM
-cascade rate—a 4.4 percentage-point improvement in accuracy and 16.1
-percentage-point reduction in cascade rate over the baseline
-(280-example training set, logistic regression with unigram TF-IDF).
+cascade rate. Under a controlled ablation---training set, hyperparameters and
+eval set held fixed---tag augmentation is worth $+7.1$ pp accuracy and
+$-23.5$ pp cascade rate. We also report what these headline numbers conceal:
+49.5\% of queries still reach the large model, a word-count rule attains
+89.7\%, and the benchmark's labels are strongly length-confounded
+(Section~\ref{sec:confound}).
 
 % ══════════════════════════════════════════════════════════════════════════════
 \section{Related Work}
@@ -124,7 +138,7 @@ percentage-point reduction in cascade rate over the baseline
 \paragraph{LLM Routing and Cascading.}
 FrugalGPT \citep{chen2023frugalgpt} formalizes LLM cascading as a
 cost-quality optimization problem and shows that routing to cheaper models
-first—escalating only on low-confidence outputs—reduces costs by up to
+first---escalating only on low-confidence outputs---reduces costs by up to
 98\% at matched quality. RouteLLM \citep{ong2024routellm} learns a router
 from human preference data (e.g., Chatbot Arena judgements), achieving
 strong routing accuracy without LLM calls at inference time. Our work
@@ -173,7 +187,7 @@ each query.
     node distance=0.55cm and 1.2cm,
     every node/.style={font=\small},
     box/.style={rectangle, rounded corners=3pt, minimum width=5.8cm,
-                minimum height=0.75cm, text centered, draw, thick},
+                minimum height=0.75cm, align=center, draw, thick},
     layer0/.style={box, fill=layer0col!15, draw=layer0col},
     layer1/.style={box, fill=layer1col!15, draw=layer1col},
     layer2/.style={box, fill=layer2col!15, draw=layer2col},
@@ -183,14 +197,14 @@ each query.
     sidarr/.style={-{Stealth[length=5pt]}, thick, dashed},
 ]
 
-\node[layer0] (preflight) {\textbf{Layer 0 — Pre-flight check}\\
+\node[layer0] (preflight) {\textbf{Layer 0 --- Pre-flight check}\\
     \footnotesize query $>$ 2{,}000 words $\Rightarrow$ skip all routing};
 
-\node[layer1, below=of preflight] (mlrouter) {\textbf{Layer 1 — ML Router} \hspace{0.2em}
+\node[layer1, below=of preflight] (mlrouter) {\textbf{Layer 1 --- ML Router} \hspace{0.2em}
     {\footnotesize(\textasciitilde{}0\,ms, no API call)}\\
-    \footnotesize TF-IDF (1–3\,grams, 5k feats) + 16 tags + Logistic Regression};
+    \footnotesize TF-IDF (1--3\,grams, 5k feats) + 16 tags + Logistic Regression};
 
-\node[layer2, below=of mlrouter] (llmcls) {\textbf{Layer 2 — LLM Classifier}
+\node[layer2, below=of mlrouter] (llmcls) {\textbf{Layer 2 --- LLM Classifier}
     \hspace{0.2em}{\footnotesize(\smallmdl{}, JSON mode)}\\
     \footnotesize complexity, intent, confidence, routing\_decision, profile\_relevant};
 
@@ -259,7 +273,7 @@ query cascades to Layer 2.
 \subsection{Layer 2: LLM Classifier}
 \label{sec:layer2}
 
-The LLM Classifier uses \smallmdl{} in JSON mode to predict six fields:
+The LLM Classifier uses \smallmdl{} in JSON mode to predict seven fields:
 \texttt{complexity}, \texttt{intent}, \texttt{confidence},
 \texttt{requires\_tools}, \texttt{sensitive}, \texttt{routing\_decision},
 and \texttt{profile\_relevant}. If the returned confidence is below
@@ -277,7 +291,7 @@ applies the profile injection decision and dispatches the query:
     \texttt{SimpleAnswerer} module handles the query with optional profile
     augmentation.
     \item \textbf{Large path} (\largemdl{}, $\leq$4096 tokens):
-    a three-stage pipeline runs sequentially—(1) \texttt{Reasoner}
+    a three-stage pipeline runs sequentially---(1) \texttt{Reasoner}
     generates the core answer, (2) \texttt{Summarizer} compresses it to
     one sentence using \smallmdl{}, and (3) \texttt{Personalizer} wraps
     the core answer with a personalized introduction and closing using
@@ -324,7 +338,7 @@ Algorithm~\ref{alg:routing} formalizes the complete routing procedure.
 \label{sec:features}
 
 A key challenge for routing is that complexity signals are often sparse in
-raw query text—e.g., the word \emph{``why''} strongly predicts a reasoning
+raw query text---e.g., the word \emph{``why''} strongly predicts a reasoning
 query but rarely co-occurs with other complexity markers in short queries,
 making TF-IDF alone unreliable. We address this by prepending binary
 semantic tags to the query string before vectorization:
@@ -379,14 +393,14 @@ override in the orchestrator rather than to influence routing directly.
 
 The ML router pipeline consists of:
 \begin{enumerate}
-    \item \textbf{TF-IDF Vectorizer}: character-level 1--3 gram tokenization,
+    \item \textbf{TF-IDF Vectorizer}: word-level 1--3 gram tokenization,
           5,000 maximum features, sublinear TF scaling
           \citep{sparckjones1972tfidf}.
     \item \textbf{Logistic Regression}: $C=2.0$, LBFGS solver, balanced class
           weights, up to 2,000 iterations for convergence.
 \end{enumerate}
 
-The model is trained on 280 seed examples spanning 21 intent categories, with
+The model is trained on 239 seed examples spanning 23 intent categories, with
 the label set \{``\texttt{small}'', ``\texttt{big}''\}. Training takes under
 one second on a standard CPU. The pipeline is serialized to
 \texttt{router\_v0.joblib} via \texttt{joblib} for zero-overhead loading.
@@ -476,11 +490,11 @@ benchmark sets:
 \begin{itemize}
     \item \textbf{Eval-500}: 500 queries across 19 intent categories,
           used to establish the baseline and diagnose per-category weaknesses.
-    \item \textbf{Eval-1000}: 1,000 queries across 21 categories (extending
+    \item \textbf{Eval-1000}: 1,000 queries across 23 categories (disjoint from
           Eval-500 with \emph{conversational}, \emph{debug\_simple},
           \emph{ethical\_philosophical}, and \emph{comparison\_technical}).
 \end{itemize}
-All queries are human-authored and labelled by the authors. Labels reflect
+All queries were authored and labelled by the sole author. Labels reflect
 the intended target model: \texttt{small} for queries answerable accurately
 by \smallmdl{}, \texttt{big} for queries requiring \largemdl{}. Labels were
 validated against observed model output quality during system development.
@@ -505,8 +519,8 @@ LLM classifier call would be triggered. Lower cascade rate = lower API cost.}
 \textbf{Checkpoint} & \textbf{Eval set} & \textbf{Accuracy} &
 \textbf{Cascade rate} & \textbf{ML-only rate} \\
 \midrule
-v0 — 120 examples, unigram & Eval-500  & 88.2\% & 30.8\% & 69.2\% \\
-v1 — 280 examples, 1--3 gram & Eval-1000 & \textbf{92.6\%} & \textbf{14.7\%} & \textbf{85.3\%} \\
+v0 --- 120 examples, unigram & Eval-500  & 88.2\% & 30.8\% & 69.2\% \\
+v1 --- 239 examples, 1--3 gram & Eval-1000 & \textbf{92.6\%} & \textbf{14.7\%} & \textbf{85.3\%} \\
 \midrule
 \multicolumn{2}{l}{Improvement (v0 $\rightarrow$ v1)} & \textbf{+4.4 pp} & \textbf{$-$16.1 pp} & \textbf{+16.1 pp} \\
 \bottomrule
@@ -520,6 +534,14 @@ The high recall (0.963) reflects our conservative design
 principle: routing a complex query to the Small LLM is a worse error
 than routing a simple query to the Large LLM.
 
+We stress a distinction the cascade-rate metric obscures. Cascade rate
+(14.7\%) measures \emph{routing overhead}---how often the LLM classifier is
+consulted. It is not the cost of serving. The router dispatches
+$438 + 57 = 495$ queries, or \textbf{49.5\%}, to \largemdl{} (against a
+ground-truth \texttt{big} rate of 45.5\%). Monetary savings are governed by
+that 49.5\%, not by the 14.7\%, and we report both to avoid the comparison
+being read against systems that quote strong-model dispatch rates.
+
 \subsection{Per-Category Breakdown}
 \label{sec:percategory}
 
@@ -527,8 +549,9 @@ Table~\ref{tab:percategory} shows accuracy and cascade rate for all 21
 categories in Eval-1000, sorted by accuracy.
 
 \begin{table}[t]
-\caption{Per-category routing accuracy and cascade rate (Eval-1000, v1 checkpoint).
-Categories marked with $\star$ are new in Eval-1000 vs.\ Eval-500.}
+\caption{Per-category routing accuracy and cascade rate (Eval-1000, v1 checkpoint),
+sorted by accuracy. All 23 categories are listed. Categories marked $\star$ are
+absent from Eval-500.}
 \label{tab:percategory}
 \centering
 \small
@@ -537,28 +560,29 @@ Categories marked with $\star$ are new in Eval-1000 vs.\ Eval-500.}
 \textbf{Category} & \textbf{Acc.} & \textbf{Casc.} &
 \textbf{Category} & \textbf{Acc.} & \textbf{Casc.} \\
 \midrule
-analysis                   & 100\%  & 5.6\%  & short\_creative      & 100\%  & 11.1\% \\
-career\_learning           & 100\%  & 0.0\%  & system\_design       & 100\%  & 0.0\%  \\
-comp.\ technical$^\star$   & 100\%  & 6.7\%  & factual              & 96.1\% & 7.9\%  \\
-compound\_questions        & 100\%  & 2.0\%  & yes\_no              & 95.6\% & 26.7\% \\
-conversions                & 100\%  & 45.0\% & greetings            & 93.8\% & 15.6\% \\
-definitions                & 100\%  & 0.0\%  & ambiguous            & 90.0\% & 15.0\% \\
-domain\_specific           & 100\%  & 0.0\%  & conversational$^\star$ & 80.0\% & 26.7\% \\
-math\_simple               & 100\%  & 32.7\% & eth.\ philos.$^\star$ & 75.0\% & 20.0\% \\
-multi\_constraint          & 100\%  & 20.0\% & debug\_simple$^\star$ & 33.3\% & 24.4\% \\
-proofs                     & 100\%  & 10.0\% & & & \\
-real\_world\_planning      & 100\%  & 16.0\% & \textbf{Overall} & \textbf{92.6\%} & \textbf{14.7\%} \\
-research\_synthesis        & 100\%  & 0.0\%  & & & \\
+analysis & 100.0\% & 5.6\% & short\_creative & 100.0\% & 11.1\% \\
+career\_learning & 100.0\% & 0.0\% & system\_design & 100.0\% & 0.0\% \\
+comparison\_technical$^\star$ & 100.0\% & 6.7\% & factual & 96.1\% & 7.9\% \\
+compound\_questions & 100.0\% & 2.0\% & yes\_no & 95.6\% & 26.7\% \\
+conversions & 100.0\% & 45.0\% & greetings & 93.8\% & 15.6\% \\
+definitions & 100.0\% & 0.0\% & ambiguous & 90.0\% & 15.0\% \\
+domain\_specific\_deep & 100.0\% & 0.0\% & multi\_step\_code & 83.3\% & 60.0\% \\
+math\_simple & 100.0\% & 32.7\% & conversational$^\star$ & 80.0\% & 26.7\% \\
+multi\_constraint & 100.0\% & 20.0\% & trivia & 80.0\% & 40.0\% \\
+proofs & 100.0\% & 10.0\% & ethical\_philosophical$^\star$ & 75.0\% & 20.0\% \\
+real\_world\_planning & 100.0\% & 16.0\% & debug\_simple$^\star$ & 33.3\% & 24.4\% \\
+research\_synthesis & 100.0\% & 0.0\% & \textbf{Overall} & \textbf{92.6\%} & \textbf{14.7\%} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \textbf{Key observations:}
 \begin{itemize}
-    \item \emph{14 of 21 categories achieve 100\% routing accuracy}, indicating
+    \item \emph{14 of 23 categories achieve 100\% routing accuracy}, indicating
           that the feature tags provide strong discriminative signal for most
           well-defined intent types.
-    \item \emph{High cascade rate in \texttt{conversions} (45\%) and
+    \item \emph{High cascade rate in \texttt{multi\_step\_code} (60.0\%),
+          \texttt{conversions} (45\%), \texttt{trivia} (40.0\%) and
           \texttt{math\_simple} (32.7\%)} stems from surface-level similarity
           to both classes: a query like ``convert 5 kg to lbs'' is short and
           factual but contains numeric operators that activate
@@ -574,29 +598,127 @@ research\_synthesis        & 100\%  & 0.0\%  & & & \\
           with an \texttt{HAS\_ETHICAL\_KW} tag is the recommended fix.
 \end{itemize}
 
-\subsection{Ablation: Tag Augmentation vs. Raw TF-IDF}
-\label{sec:ablation}
+\subsection{External Baselines}
+\label{sec:baselines}
 
-To quantify the contribution of the feature tags, we compare two variants
-on Eval-500:
+Accuracy is uninterpretable without reference points. Table~\ref{tab:baselines}
+compares \system{} against trivial routers on Eval-1000. All learned rows use
+the same 239 training examples and hyperparameters; 95\% confidence intervals
+are non-parametric bootstrap over 2{,}000 resamples.
 
-\begin{table}[h]
-\caption{Ablation: impact of tag augmentation on routing accuracy and cascade rate.}
-\label{tab:ablation}
+\begin{table}[t]
+\caption{\system{} against trivial baselines on Eval-1000. \emph{Large-model
+rate} is the fraction of queries dispatched to \largemdl{}; it, not cascade
+rate, governs monetary cost. Cascade rate is defined only for probabilistic
+routers.}
+\label{tab:baselines}
 \centering
-\begin{tabular}{lccc}
+\small
+\begin{tabular}{lcccc}
 \toprule
-\textbf{Model variant} & \textbf{Accuracy} & \textbf{Cascade rate} & \textbf{F1} \\
+\textbf{Router} & \textbf{Accuracy} & \textbf{95\% CI} & \textbf{F1 (big)} & \textbf{Large-model rate} \\
 \midrule
-Unigram TF-IDF, no tags (v0) & 88.2\% & 30.8\% & 0.889 \\
-1--3 gram TF-IDF + 16 tags (v1) & \textbf{92.6\%} & \textbf{14.7\%} & \textbf{0.922} \\
+Majority class (all-small)          & 54.5\% & [0.514, 0.576] & --    & 0.0\%   \\
+All-big                             & 45.5\% & [0.424, 0.486] & 0.625 & 100.0\% \\
+Random ($p{=}0.5$)                  & 51.6\% & [0.486, 0.546] & 0.498 & 50.9\%  \\
+Tag rules only (no learning)        & 70.3\% & [0.675, 0.733] & 0.687 & 49.4\%  \\
+Word-count logistic regression      & 86.1\% & --             & --    & 55.0\%  \\
+\textbf{Word-count rule ($\leq$8 words $\to$ small)} & \textbf{89.7\%} & [0.879, 0.915] & \textbf{0.888} & 46.8\% \\
+\midrule
+\system{} (full ML router)          & \textbf{92.6\%} & [0.909, 0.942] & \textbf{0.922} & 49.5\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Tag augmentation contributes +4.4 pp accuracy and $-$16.1 pp cascade rate,
-with the largest gains in \texttt{short\_creative} (cascade 100\% $\to$ 11.1\%
-after adding \texttt{HAS\_CREATIVE\_KW}) and \texttt{ambiguous} categories.
+The headline finding is sobering: a one-line word-count rule attains 89.7\%,
+within 2.9 pp of the full router, and their confidence intervals overlap.
+\system{} beats it, but by far less than the raw accuracy figure suggests.
+
+\subsection{Ablation: What Do the Tags Contribute?}
+\label{sec:ablation}
+
+Our earlier comparison varied training-set size, $n$-gram range and tag
+augmentation simultaneously, and evaluated the two arms on different benchmarks;
+it therefore could not attribute the gain to any one factor. Table~\ref{tab:ablation}
+re-runs the ablation with the training set (239 examples), hyperparameters and
+eval set (Eval-1000) held fixed.
+
+\begin{table}[t]
+\caption{Controlled $2\times2$ ablation on Eval-1000, 239 training examples,
+identical hyperparameters throughout.}
+\label{tab:ablation}
+\centering
+\begin{tabular}{llccc}
+\toprule
+\textbf{Representation} & \textbf{$n$-gram} & \textbf{Accuracy} & \textbf{Cascade rate} & \textbf{F1 (big)} \\
+\midrule
+Query text only & unigram   & 87.0\% & 35.1\% & 0.872 \\
+Query text only & 1--3 gram & 85.5\% & 38.2\% & 0.859 \\
+$+$ tags        & unigram   & 92.0\% & 14.1\% & 0.917 \\
+$+$ tags        & 1--3 gram & \textbf{92.6\%} & \textbf{14.7\%} & \textbf{0.922} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Tag augmentation is worth $+7.1$ pp accuracy and $-23.5$ pp cascade rate at
+the 1--3 gram setting --- a larger effect than we previously reported. The
+$n$-gram range, by contrast, does essentially nothing: without tags trigrams
+\emph{hurt} ($-1.5$ pp), and with tags they add $+0.6$ pp, well inside the
+bootstrap interval.
+
+\subsection{Decomposition: Which Tags Actually Matter?}
+\label{sec:decomposition}
+
+The tag vocabulary mixes three length buckets (\texttt{LEN\_SHORT},
+\texttt{LEN\_MEDIUM}, \texttt{LEN\_LONG}) with thirteen semantic tags. Table~\ref{tab:decomp}
+separates them.
+
+\begin{table}[t]
+\caption{Tag decomposition (Eval-1000, 1--3 gram, 239 training examples).
+The entire tag effect is attributable to the length buckets.}
+\label{tab:decomp}
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Representation} & \textbf{Accuracy} & \textbf{Cascade rate} & \textbf{$\Delta$ vs.\ no tags} \\
+\midrule
+Query text only (no tags)          & 85.5\% & 38.2\% & --- \\
+$+$ \texttt{LEN\_*} tags only      & 92.4\% & 17.3\% & $+6.9$ pp \\
+$+$ semantic tags only (13 tags)   & 85.9\% & 29.5\% & $+0.4$ pp \\
+$+$ all tags (production)          & 92.6\% & 14.7\% & $+7.1$ pp \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The length buckets alone recover $+6.9$ of the $+7.1$ pp total. The thirteen
+semantic tags --- reasoning keywords, code presence, question multiplicity,
+research and impact markers --- contribute $+0.4$ pp, which is not
+distinguishable from noise. This directly contradicts our stated motivation
+for the tag vocabulary.
+
+\subsection{Threat: The Benchmark Is Length-Confounded}
+\label{sec:confound}
+
+The three preceding results share one explanation. On Eval-1000 the
+point-biserial correlation between query word count and the \texttt{big} label
+is $r = 0.766$: \texttt{small} queries average 6.1 words and \texttt{big}
+queries 11.7, and the label flips almost deterministically at nine words
+(queries of 1--8 words are 8.5\% \texttt{big}; queries of 9+ words are 87.7\%
+\texttt{big}). Because we authored both the queries and their labels, we
+appear to have encoded complexity as length.
+
+Two consequences follow. First, the benchmark does not measure what we
+designed it to measure. Second, and more concretely, the router fails exactly
+where length is uninformative: on the 103 queries (10.3\%) where the word-count
+rule is wrong, \system{} scores 52.4\% --- indistinguishable from chance --- while
+also overturning 25 cases the trivial rule got right. Within fixed length
+buckets the router improves on a length-only majority predictor by
+$+0.5$, $+3.1$, $+5.5$ and $+0.6$ pp respectively.
+
+We therefore regard the 92.6\% figure as an artefact of benchmark construction
+rather than evidence of semantic routing ability. A length-stratified benchmark,
+in which $P(\texttt{big})$ is held constant across word-count buckets, is a
+prerequisite for any further claim about this router, and we do not make one here.
 
 % ══════════════════════════════════════════════════════════════════════════════
 \section{Limitations}
@@ -609,7 +731,7 @@ behaviour. A future version using open-weight models (e.g., Llama-3,
 Mistral) would remove this dependency.
 
 \paragraph{Synthetic evaluation data.}
-The 1,500-case benchmark was authored and labelled by a single annotator.
+The 1,491-case benchmark was authored and labelled by a single annotator.
 While category coverage is broad, it may not reflect the distribution of
 real-world user queries. Real-traffic evaluation (enabled by the
 classification logger) is ongoing but not yet reported.
@@ -627,6 +749,20 @@ end-to-end monetary cost per query because it depends on query-specific
 token counts and time-varying API pricing. A cost-per-query analysis with
 real user sessions is a planned future contribution.
 
+\paragraph{Length confound in the benchmark.}
+Query word count correlates with the routing label at $r = 0.766$
+(Section~\ref{sec:confound}), so a trivial word-count rule reaches 89.7\%.
+Because a single annotator wrote both queries and labels, we cannot rule out
+that complexity was operationalised as length during authoring. Every accuracy
+number in this paper should be read against the 89.7\% word-count floor rather
+than against the 54.5\% majority-class floor.
+
+\paragraph{Conditional personalization is unevaluated.}
+The personalization mechanism of Section~\ref{sec:personalization} is
+described but never measured; we report no experiment isolating its effect on
+response quality or token cost. It should be read as a system description, not
+a validated contribution.
+
 \paragraph{Profile privacy.}
 Persisting user profiles in a local SQLite database is appropriate for
 single-user or research deployments. Production deployments would require
@@ -641,18 +777,22 @@ We presented \system{}, a three-layer cascaded routing system for dual-LLM
 serving that combines a zero-latency ML router, an LLM fallback classifier,
 and a conditional user personalization mechanism. The ML router handles
 85.3\% of queries with 92.6\% accuracy and no API calls, with the LLM
-classifier invoked for only 14.7\% of queries. Feature-augmented TF-IDF
-with 16 hand-crafted binary tags yields significant improvements over
-raw bag-of-words routing (+4.4 pp accuracy, $-$16.1 pp cascade rate).
+classifier invoked for only 14.7\% of queries. Under a controlled ablation, tag
+augmentation yields $+7.1$ pp accuracy and $-23.5$ pp cascade rate over raw
+bag-of-words routing---but a decomposition attributes $+6.9$ of those $7.1$ pp
+to three query-length buckets, not to the thirteen semantic tags we designed.
 The self-improving routing loop enables the router to incorporate real
 traffic labels, making accuracy a function of deployment volume rather
 than a fixed property of the seed training set.
 
-The system demonstrates that high-accuracy LLM routing is achievable with
-small, interpretable models—logistic regression on 280 examples—when
-combined with domain-specific feature engineering. This positions \system{}
-as a practical, immediately deployable solution for teams seeking to reduce
-LLM serving costs without sacrificing response quality.
+The system shows that a logistic regression over 239 examples is enough to
+route competitively on this benchmark---but our own baselines temper that
+claim: a one-line word-count rule reaches 89.7\%, within 2.9 pp of the full
+router and with overlapping confidence intervals. We therefore present
+\system{} as a deployable engineering baseline and a cautionary methodological
+result, not as evidence that learned semantic routing beats trivial heuristics.
+Establishing the latter requires a length-stratified benchmark, which we
+identify as the necessary next step.
 
 % ══════════════════════════════════════════════════════════════════════════════
 
@@ -663,62 +803,9 @@ developed. No external funding was received for this work.
 \end{ack}
 
 % ══════════════════════════════════════════════════════════════════════════════
-\section*{References}
+\bibliographystyle{plainnat}
+\bibliography{refs}
 
-{
-\small
-
-[1] \textbf{Chen, L., Zaharia, M., \& Zou, J.} (2023).
-FrugalGPT: How to use large language models while reducing cost and
-improving performance. \textit{arXiv preprint arXiv:2305.05176}.
-
-[2] \textbf{Ong, I., Almahairi, A., Wu, V., Chiang, W.-L., Wu, T.,
-Gonzalez, J. E., Kadous, M. W., \& Stoica, I.} (2024).
-RouteLLM: Learning to route LLMs with preference data.
-\textit{arXiv preprint arXiv:2406.18665}.
-
-[3] \textbf{Shazeer, N., Mirhoseini, A., Maziarz, K., Davis, A.,
-Le, Q., Hinton, G., \& Dean, J.} (2017).
-Outrageously large neural networks: The sparsely-gated
-mixture-of-experts layer.
-\textit{International Conference on Learning Representations (ICLR)}.
-
-[4] \textbf{Jiang, A. Q., Sablayrolles, A., Roux, A., Mensch, A.,
-Savary, B., Bamford, C., \ldots{} \& El Sayed, W.} (2024).
-Mixtral of experts.
-\textit{arXiv preprint arXiv:2401.04088}.
-
-[5] \textbf{Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V.,
-Thirion, B., Grisel, O., \ldots{} \& Duchesnay, E.} (2011).
-Scikit-learn: Machine learning in Python.
-\textit{Journal of Machine Learning Research}, 12, 2825--2830.
-
-[6] \textbf{Sparck Jones, K.} (1972).
-A statistical interpretation of term specificity and its application
-in retrieval. \textit{Journal of Documentation}, 28(1), 11--21.
-
-[7] \textbf{Jiang, D., Ren, X., \& Yu, B.} (2023).
-LLM-Blender: Ensembling large language models with pairwise ranking
-and generative fusion.
-\textit{Proceedings of the 61st Annual Meeting of the Association for
-Computational Linguistics (ACL)}, 14165--14178.
-
-[8] \textbf{Shen, Y., Song, K., Tan, X., Li, D., Lu, W., \&
-Zhuang, Y.} (2023). HuggingGPT: Solving AI tasks with ChatGPT and
-its friends in HuggingFace.
-\textit{Advances in Neural Information Processing Systems (NeurIPS)}, 36.
-
-[9] \textbf{Achiam, J., Adler, S., Agarwal, S., Ahmad, L.,
-Akkaya, I., Aleman, F. L., \ldots{} \& Ziegler, D.} (2023).
-GPT-4 technical report.
-\textit{arXiv preprint arXiv:2303.08774}.
-
-[10] \textbf{Li, J., He, Z., Xu, H., Chen, X., Tian, Q.,
-\& Gao, J.} (2023).
-Teach LLMs to personalize: An approach inspired by writing education.
-\textit{arXiv preprint arXiv:2308.07968}.
-
-}
 
 % ══════════════════════════════════════════════════════════════════════════════
 \appendix
