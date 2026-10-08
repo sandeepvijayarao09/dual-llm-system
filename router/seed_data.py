@@ -6,7 +6,7 @@ Labels:
     "big"   — multi-step reasoning, synthesis, proofs, code design,
               anything where small LLM quality is likely to degrade
 
-~280 examples, roughly balanced. Hand-crafted to cover:
+239 examples, roughly balanced. Hand-crafted to cover:
     greetings, factual lookups, trivia, unit conversions,
     light code (small) ────────── vs. ──────────
     proofs, architecture, system design, analysis, debugging,

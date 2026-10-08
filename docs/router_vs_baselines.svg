@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 368" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<rect width="760" height="368" fill="#ffffff"/>
+<text x="24" y="30" font-size="17" font-weight="600" fill="#1f2937">Routing accuracy on Eval-1000, with 95% bootstrap intervals</text>
+<text x="24" y="50" font-size="12.5" fill="#6b7280">The full router beats a one-line word-count rule by 2.9 points, and the intervals overlap.</text>
+<text x="24" y="68" font-size="12.5" fill="#6b7280">Word count and label correlate at r = 0.766 on this benchmark (FINDINGS.md).</text>
+<line x1="270.0" y1="78" x2="270.0" y2="322" stroke="#e5e7eb"/>
+<text x="270.0" y="340" font-size="11.5" fill="#6b7280" text-anchor="middle">40%</text>
+<line x1="340.0" y1="78" x2="340.0" y2="322" stroke="#e5e7eb"/>
+<text x="340.0" y="340" font-size="11.5" fill="#6b7280" text-anchor="middle">50%</text>
+<line x1="410.0" y1="78" x2="410.0" y2="322" stroke="#e5e7eb"/>
+<text x="410.0" y="340" font-size="11.5" fill="#6b7280" text-anchor="middle">60%</text>
+<line x1="480.0" y1="78" x2="480.0" y2="322" stroke="#e5e7eb"/>
+<text x="480.0" y="340" font-size="11.5" fill="#6b7280" text-anchor="middle">70%</text>
+<line x1="550.0" y1="78" x2="550.0" y2="322" stroke="#e5e7eb"/>
+<text x="550.0" y="340" font-size="11.5" fill="#6b7280" text-anchor="middle">80%</text>
+<line x1="620.0" y1="78" x2="620.0" y2="322" stroke="#e5e7eb"/>
+<text x="620.0" y="340" font-size="11.5" fill="#6b7280" text-anchor="middle">90%</text>
+<line x1="690.0" y1="78" x2="690.0" y2="322" stroke="#e5e7eb"/>
+<text x="690.0" y="340" font-size="11.5" fill="#6b7280" text-anchor="middle">100%</text>
+<line x1="286.8" y1="101.0" x2="330.2" y2="101.0" stroke="#9ca3af" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+<circle cx="308.5" cy="101.0" r="6" fill="#9ca3af"/>
+<text x="256" y="105.5" font-size="13" fill="#1f2937" font-weight="400" text-anchor="end">Always GPT-4o</text>
+<text x="340.2" y="105.5" font-size="12" fill="#1f2937" font-weight="400">45.5%</text>
+<line x1="330.2" y1="135.0" x2="372.2" y2="135.0" stroke="#9ca3af" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+<circle cx="351.2" cy="135.0" r="6" fill="#9ca3af"/>
+<text x="256" y="139.5" font-size="13" fill="#1f2937" font-weight="400" text-anchor="end">Random</text>
+<text x="382.2" y="139.5" font-size="12" fill="#1f2937" font-weight="400">51.6%</text>
+<line x1="349.8" y1="169.0" x2="393.2" y2="169.0" stroke="#9ca3af" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+<circle cx="371.5" cy="169.0" r="6" fill="#9ca3af"/>
+<text x="256" y="173.5" font-size="13" fill="#1f2937" font-weight="400" text-anchor="end">Always GPT-4o-mini</text>
+<text x="403.2" y="173.5" font-size="12" fill="#1f2937" font-weight="400">54.5%</text>
+<line x1="462.5" y1="203.0" x2="503.1" y2="203.0" stroke="#9ca3af" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+<circle cx="482.1" cy="203.0" r="6" fill="#9ca3af"/>
+<text x="256" y="207.5" font-size="13" fill="#1f2937" font-weight="400" text-anchor="end">Tag rules, no learning</text>
+<text x="513.1" y="207.5" font-size="12" fill="#1f2937" font-weight="400">70.3%</text>
+<line x1="573.1" y1="237.0" x2="603.9" y2="237.0" stroke="#9ca3af" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+<circle cx="588.5" cy="237.0" r="6" fill="#9ca3af"/>
+<text x="256" y="241.5" font-size="13" fill="#1f2937" font-weight="400" text-anchor="end">TF-IDF + LR, no tags</text>
+<text x="613.9" y="241.5" font-size="12" fill="#1f2937" font-weight="400">85.5%</text>
+<line x1="605.3" y1="271.0" x2="630.5" y2="271.0" stroke="#1f2937" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+<circle cx="617.9" cy="271.0" r="6" fill="#1f2937"/>
+<text x="256" y="275.5" font-size="13" fill="#1f2937" font-weight="600" text-anchor="end">One line: ≤ 8 words → mini</text>
+<text x="640.5" y="275.5" font-size="12" fill="#1f2937" font-weight="600">89.7%</text>
+<line x1="626.3" y1="305.0" x2="649.4" y2="305.0" stroke="#1d4ed8" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+<circle cx="638.2" cy="305.0" r="6" fill="#1d4ed8"/>
+<text x="256" y="309.5" font-size="13" fill="#1f2937" font-weight="600" text-anchor="end">Full ML router (TF-IDF + tags + LR)</text>
+<text x="659.4" y="309.5" font-size="12" fill="#1f2937" font-weight="600">92.6%</text>
+<text x="24" y="358" font-size="11" fill="#6b7280">python -m router.ablation, then python -m router.plot_ablation</text>
+</svg>

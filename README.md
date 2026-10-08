@@ -1,34 +1,61 @@
-<div align="center">
+# Dual LLM System
 
-# 🧠 Dual LLM System
+**A cascade router that sends each chat query to GPT-4o-mini or GPT-4o, plus an
+honest ablation of why it works.** A word-count pre-flight, a TF-IDF + logistic
+regression router, and a GPT-4o-mini classifier fallback pick the model; SQLite
+user profiles and a sliding-window memory personalize the answer.
 
-**Intelligent Query Routing · Persistent User Profiles · Self-Improving ML Router**
-
-A production-style dual-LLM architecture that routes every query through a 3-layer decision engine — routing simple queries to GPT-4o-mini and complex ones to GPT-4o — while personalizing responses using persistent user profiles and a sliding-window conversation memory.
-
-![Python](https://img.shields.io/badge/Python-3.14-3776AB?style=flat-square&logo=python&logoColor=white)
+![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)
 ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?style=flat-square&logo=openai&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)
-![scikit-learn](https://img.shields.io/badge/scikit--learn-ML_Router-F7931E?style=flat-square&logo=scikit-learn&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-Profile_DB-003B57?style=flat-square&logo=sqlite&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-1.8-F7931E?style=flat-square&logo=scikit-learn&logoColor=white)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](LICENSE)
 
-</div>
+![Routing accuracy on Eval-1000: full router 92.6%, one-line word-count rule 89.7%, with overlapping intervals](docs/router_vs_baselines.svg)
+
+Built at Northeastern University as a course project with **Zichen Qi** and
+**Yalin Sun**; their original report is in [`paper/archive/`](paper/archive/).
+The follow-up ablation in [FINDINGS.md](FINDINGS.md) and the current paper in
+[`paper/`](paper/) are by Sandeep Vijayarao.
 
 ---
 
-## What It Does
+## What it does
 
-Most LLM apps send every query to the most expensive model available — even `"hi"` or `"what is 2+2"`. This system solves that with a **3-layer routing cascade** that picks the right model for every query at zero extra latency, while personalizing every response using a persistent profile of who the user is.
+Most LLM apps send every query to the most expensive model, even `"hi"`. This
+system routes each query through a 3-layer cascade: cheap queries go to
+GPT-4o-mini, hard ones to GPT-4o, and the expensive classifier only runs when
+the offline router is unsure. It also keeps a per-user profile and a bounded
+conversation memory, and only sends the profile when the query needs it.
 
-### Key Numbers
+## Key numbers, and what they mean
 
-| Metric | Value |
-|---|---|
-| ML Router accuracy | **92.6%** (1000-case eval) |
-| Cascade rate (ML → LLM fallback) | **14.7%** |
-| ML router handles alone | **85.3%** of queries (zero API cost for routing) |
-| Confidence improvement | 0.706 → **0.764** mean |
-| Test cases evaluated | **1,500** (500 + 1000) |
+All from the committed model on Eval-1000 (1,000 author-labelled queries, 23
+categories). Reproduce with `python -m router.eval_1000` and
+`python -m router.ablation`.
+
+| Metric | Value | Read it as |
+|---|---|---|
+| ML router accuracy | **92.6%** (95% CI 90.9–94.2) | small vs big, against the labels |
+| One-line baseline: `len(query.split()) <= 8` → small | **89.7%** (95% CI 87.9–91.5) | only 2.9 points behind; intervals overlap |
+| Queries the ML router decides alone | **85.3%** | the other 14.7% also cost one GPT-4o-mini classifier call |
+| Queries sent to GPT-4o | **49.5%** | this drives serving cost; the labels say 45.5% need it |
+| Seed training set | **239** examples | |
+
+**What the ablation found** ([FINDINGS.md](FINDINGS.md)):
+
+- The router's gain over plain TF-IDF (+7.1 points) comes almost entirely from
+  the three **length** tags (+6.9). The thirteen semantic tags (reasoning
+  keywords, code, math and so on) add +0.4 points, which is noise.
+- The reason is the benchmark: word count and the `big` label correlate at
+  **r = 0.766**, because one annotator wrote both the queries and the labels.
+  The label flips almost deterministically at nine words.
+- On the 103 queries where the word-count rule is wrong, the router is at
+  chance (52.4%).
+
+So the cascade works as engineering (it routes, falls back, logs and stays
+cheap), but this benchmark cannot show that the semantic features matter. The
+next step is a length-stratified eval set; see "Path B" in FINDINGS.md.
 
 ---
 
@@ -47,7 +74,7 @@ User Query
 ┌─────────────────────────────────────────────────────────┐
 │  LAYER 1 — ML Router  (offline, ~0ms, no API call)      │
 │  TF-IDF (1-3 grams, 5000 features)                      │
-│  + 11 hand-crafted feature tags                         │
+│  + 16 hand-crafted feature tags                         │
 │  + Logistic Regression (balanced class weights)         │
 │                                                         │
 │  confidence ≥ 0.65 → use decision directly              │
@@ -80,7 +107,11 @@ User Query
 
 ## Feature Engineering (ML Router Tags)
 
-The ML router encodes each query as a tag-augmented string before TF-IDF:
+The ML router encodes each query as a tag-augmented string before TF-IDF. On
+Eval-1000 only the three `LEN_*` tags carry measurable signal; the rest add
++0.4 points combined, and `LEN_LONG`, `Q_MULTI` and `MULTI_SENTENCE` never fire
+(FINDINGS.md section 2). They are kept because a less length-confounded
+benchmark may need them.
 
 ```
 encode_text("why is the sky blue?")
@@ -110,12 +141,13 @@ encode_text("why is the sky blue?")
 
 ## ML Router Evaluation Results
 
-### 1000-Case Evaluation (latest)
+### 1000-Case Evaluation
 
 ```
-Overall Accuracy  : 92.6%  (↑ from 88.2% baseline)
-Cascade Rate      : 14.7%  (↓ from 30.8% baseline)
-ML handles alone  : 85.3%  (zero API cost for routing)
+Overall Accuracy  : 92.6%
+Cascade Rate      : 14.7%   (queries that also get the GPT-4o-mini classifier)
+ML decides alone  : 85.3%
+Sent to GPT-4o    : 49.5%
 
 Confusion Matrix (positive = 'big'):
   TP = 438   FN = 17
@@ -152,18 +184,20 @@ Confusion Matrix (positive = 'big'):
 | ethical_philosophical | 75.0% | 20.0% |
 | debug_simple | 33.3% | 24.4% *(next target)* |
 
-### Before / After Improvement
+### v0 vs v1, and why that comparison is not an ablation
 
-| | Accuracy | Cascade Rate |
-|---|---|---|
-| Baseline (v0, 120 examples) | 88.2% | 30.8% |
-| Improved (v1, 280 examples) | **92.6%** | **14.7%** |
-| Delta | **+4.4%** | **-16.1%** |
+The original write-up compared v0 (120 examples, unigrams, 88.2% on Eval-500)
+against v1 (239 examples, 1–3 grams, tags, 92.6% on Eval-1000). That changes
+four things at once, including the eval set, and 11% of Eval-500 overlaps the
+training data. The controlled version, holding everything but one factor fixed,
+is in [FINDINGS.md](FINDINGS.md) section 1.
 
 Run the evaluation yourself:
 ```bash
 python -m router.eval_500   # 500 labeled cases
 python -m router.eval_1000  # 1000 labeled cases (with before/after table)
+python -m router.ablation   # controlled ablation + baselines -> router/ablation_results.json
+python -m router.plot_ablation  # redraw docs/router_vs_baselines.svg
 ```
 
 ---
@@ -243,7 +277,7 @@ Every response in the UI has two expanders:
 
 ---
 
-## Self-Improving Router Loop
+## Routing Log and Retraining
 
 Every routing decision is logged to `routing_log.db`:
 
@@ -252,7 +286,8 @@ routing_events (ts, user_id, query, ml_decision, ml_confidence,
                 llm_decision, llm_confidence, final_routing, model_used)
 ```
 
-Export high-confidence labels and retrain:
+Retraining is a manual step: export the rows where the ML router and the LLM
+classifier agreed, then retrain.
 
 ```bash
 # Export rows where ML + LLM agreed (highest-quality labels)
@@ -302,6 +337,15 @@ streamlit run app.py
 python main.py --user cs_student --verbose
 ```
 
+### Tests
+
+```bash
+pytest -q        # 38 tests, no API key needed (LLM calls are faked)
+```
+
+CI runs the tests on Python 3.11 and 3.12 and checks that the 1000-case eval
+still reproduces from the committed model.
+
 ### CLI Options
 
 ```bash
@@ -347,18 +391,25 @@ dual-llm-system/
 │   ├── features.py             # Hand-crafted feature tags + encode_text()
 │   ├── ml_router.py            # TF-IDF + LogisticRegression pipeline
 │   ├── train.py                # Training script
-│   ├── seed_data.py            # 280 labeled training examples
+│   ├── seed_data.py            # 239 labeled training examples
 │   ├── classification_logger.py # SQLite log for retraining
 │   ├── eval_500.py             # 500-case evaluation script
 │   ├── eval_1000.py            # 1000-case evaluation script
+│   ├── ablation.py             # controlled ablation behind FINDINGS.md
+│   ├── plot_ablation.py        # draws docs/router_vs_baselines.svg
 │   └── models/
 │       └── router_v0.joblib    # Trained model (saved pipeline)
 │
 ├── memory/
 │   └── conversation_buffer.py  # Sliding window + rolling summary
 │
-└── db/
-    └── profile_db.py           # SQLite CRUD for user profiles
+├── db/
+│   └── profile_db.py           # SQLite CRUD for user profiles
+│
+├── tests/                      # pytest, no API key needed
+├── paper/                      # NeurIPS-format paper (main.tex, main.pdf)
+├── FINDINGS.md                 # controlled ablation and the length confound
+└── presentation.html           # Reveal.js deck from the course presentation (predates FINDINGS.md)
 ```
 
 ---
@@ -429,7 +480,7 @@ python -m router.train --extra my_data.csv
 
 5. **Conservative routing** — when uncertain, always escalate to the better model. Three independent safety gates (pre-flight, confidence threshold, parse failure fallback).
 
-6. **ML router improves over time** — every routing decision is logged. Export, retrain, redeploy in minutes.
+6. **Every routing decision is logged** — so real traffic can be exported as labels and the router retrained (a manual step today).
 
 ---
 
