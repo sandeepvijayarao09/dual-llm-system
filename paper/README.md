@@ -1,42 +1,39 @@
-# Final Report — Dual-LLM System
+# Paper
 
-NeurIPS 2026-format paper describing the dual-LLM system implemented in this
-repository.
+NeurIPS 2026-format paper for the dual-LLM system in this repository, including
+the controlled ablation from [`../FINDINGS.md`](../FINDINGS.md) (the 89.7%
+word-count baseline and the length confound).
 
-**Authors:** Zichen Qi, Yalin Sun, Sandeep Vijayarao (Northeastern University)
-
-## Files
-
-- `main.tex` — full paper (uses the `[preprint]` option to un-anonymize)
-- `checklist.tex` — completed 16-item NeurIPS checklist (input by `main.tex`)
-- `neurips_2026.sty` — official NeurIPS 2026 style file (v2026-01-29)
+- `main.tex` / `main.pdf`: the current paper
+- `checklist.tex`: NeurIPS checklist, `\input` by `main.tex`
+- `refs.bib`: bibliography
+- `neurips_2026.sty`: official NeurIPS 2026 style file (v2026-01-29)
+- `archive/`: the original course final report (Zichen Qi, Yalin Sun and
+  Sandeep Vijayarao, Northeastern University) that this paper extends. It
+  predates the ablation, so its claims about the semantic feature tags and its
+  seed-set size are superseded by `main.tex` and FINDINGS.md.
 
 ## Build
 
-Requires a TeX distribution (TeX Live, MacTeX, MiKTeX) with `pdflatex` and
-`bibtex` (or just `natbib` from the `neurips_2026` package — we use an
-inline `thebibliography`, so `bibtex` is not required).
+With [Tectonic](https://tectonic-typesetting.github.io) (fetches packages and
+runs BibTeX itself):
 
 ```bash
 cd paper
-pdflatex main.tex
-pdflatex main.tex   # second pass resolves cross-references
+tectonic main.tex
 ```
 
-This produces `main.pdf`.
+Or with a TeX distribution:
 
-## Notes on the track option
+```bash
+cd paper
+pdflatex main && bibtex main && pdflatex main && pdflatex main
+```
 
-The paper is compiled with `\usepackage[preprint]{neurips_2026}`, which:
+The archived report is kept as source. It uses an inline numeric bibliography
+that natbib's author-year mode rejects, so build it with `pdflatex` (which
+continues past that error) from `archive/` with the style file on the path:
+`TEXINPUTS=..: pdflatex -interaction=nonstopmode course-report.tex`.
 
-- un-anonymizes the author block (required for course submission)
-- adds "Preprint. Work in progress." in the footer
-- is the correct option per the NeurIPS 2026 style guide when the paper is
-  not being submitted for double-blind review
-
-For the actual NeurIPS submission (hypothetically), swap the first
-`\usepackage` line for either:
-
-- `\usepackage{neurips_2026}` (default, double-blind Main Track), or
-- `\usepackage[main, final]{neurips_2026}` (camera-ready for an accepted
-  Main Track paper).
+The paper uses `\usepackage[preprint]{neurips_2026}`, which un-anonymizes the
+author block and adds "Preprint. Work in progress." to the footer.
