@@ -3,7 +3,7 @@ python-dotenv>=1.0.0
 streamlit>=1.38.0
 
 # ML router
-scikit-learn>=1.3.0
+scikit-learn==1.8.0     # router_v0.joblib was trained with 1.8.0; pickles are version-specific
 joblib>=1.3.0
 
 # Tests

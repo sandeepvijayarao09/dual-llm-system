@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: pip install -r requirements.txt
+      # No OpenAI key needed: the LLM clients are faked in tests/conftest.py.
+      - run: pytest -q
+      # The published router numbers must still reproduce from the committed model.
+      - name: Reproduce the 1000-case eval
+        run: |
+          python -m router.eval_1000 | tee eval.txt
+          grep -q "Accuracy (1000-case): 92.6%" eval.txt
+          grep -q "TP =   438       FN =    17" eval.txt

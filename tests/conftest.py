@@ -11,8 +11,11 @@ import os
 import sys
 from pathlib import Path
 
-# Dummy API key so llm clients construct without raising
-os.environ.setdefault("OPENAI_API_KEY", "test-key-not-real")
+# Dummy API key so llm clients construct without raising. setdefault() is not
+# enough: an exported-but-empty OPENAI_API_KEY would survive it and break the
+# integration tests.
+if not os.environ.get("OPENAI_API_KEY"):
+    os.environ["OPENAI_API_KEY"] = "test-key-not-real"
 
 # Add project root to sys.path so `from memory import ...` works when pytest
 # is invoked from any directory.

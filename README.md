@@ -273,7 +273,7 @@ python -m router.train --extra real_traffic.csv
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.11+ (scikit-learn 1.8 needs it)
 - OpenAI API key
 
 ### Setup
