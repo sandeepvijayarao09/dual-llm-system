@@ -1,0 +1,1000 @@
+{"query": "Morning!", "label": "small", "category": "greetings"}
+{"query": "Hi there!", "label": "small", "category": "greetings"}
+{"query": "Hey!", "label": "small", "category": "greetings"}
+{"query": "Hello, how's it going?", "label": "small", "category": "greetings"}
+{"query": "What's new?", "label": "small", "category": "greetings"}
+{"query": "Nice to meet you!", "label": "small", "category": "greetings"}
+{"query": "Thanks a lot!", "label": "small", "category": "greetings"}
+{"query": "Many thanks", "label": "small", "category": "greetings"}
+{"query": "Appreciate it!", "label": "small", "category": "greetings"}
+{"query": "Goodbye!", "label": "small", "category": "greetings"}
+{"query": "Later!", "label": "small", "category": "greetings"}
+{"query": "See ya", "label": "small", "category": "greetings"}
+{"query": "Good luck!", "label": "small", "category": "greetings"}
+{"query": "Welcome!", "label": "small", "category": "greetings"}
+{"query": "Congrats!", "label": "small", "category": "greetings"}
+{"query": "Congrats on the new role!", "label": "small", "category": "greetings"}
+{"query": "Happy birthday!", "label": "small", "category": "greetings"}
+{"query": "Have a good weekend", "label": "small", "category": "greetings"}
+{"query": "Hope everything is going well", "label": "small", "category": "greetings"}
+{"query": "Wishing you all the best", "label": "small", "category": "greetings"}
+{"query": "Hiya!", "label": "small", "category": "greetings"}
+{"query": "Yo!", "label": "small", "category": "greetings"}
+{"query": "Sup?", "label": "small", "category": "greetings"}
+{"query": "Howdy partner", "label": "small", "category": "greetings"}
+{"query": "Greetings!", "label": "small", "category": "greetings"}
+{"query": "What is the capital of Italy?", "label": "small", "category": "factual"}
+{"query": "Who wrote Hamlet?", "label": "small", "category": "factual"}
+{"query": "When did the French Revolution begin?", "label": "small", "category": "factual"}
+{"query": "What is the chemical formula for salt?", "label": "small", "category": "factual"}
+{"query": "Who invented the steam engine?", "label": "small", "category": "factual"}
+{"query": "What is the population of New York City?", "label": "small", "category": "factual"}
+{"query": "Where is the Great Wall of China located?", "label": "small", "category": "factual"}
+{"query": "Who was the first woman in space?", "label": "small", "category": "factual"}
+{"query": "What is the national language of Brazil?", "label": "small", "category": "factual"}
+{"query": "What year was the first iPhone released?", "label": "small", "category": "factual"}
+{"query": "What is the symbol for potassium on the periodic table?", "label": "small", "category": "factual"}
+{"query": "How many moons does Mars have?", "label": "small", "category": "factual"}
+{"query": "Who discovered gravity?", "label": "small", "category": "factual"}
+{"query": "What is the currency of Japan?", "label": "small", "category": "factual"}
+{"query": "How long is the Nile River?", "label": "small", "category": "factual"}
+{"query": "Who painted the Sistine Chapel ceiling?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Mexico?", "label": "small", "category": "factual"}
+{"query": "What year was Amazon founded?", "label": "small", "category": "factual"}
+{"query": "What is the melting point of iron?", "label": "small", "category": "factual"}
+{"query": "Who wrote 'To Kill a Mockingbird'?", "label": "small", "category": "factual"}
+{"query": "What is the smallest country in the world?", "label": "small", "category": "factual"}
+{"query": "What does HTTPS stand for?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Argentina?", "label": "small", "category": "factual"}
+{"query": "How many vertebrae are in the human spine?", "label": "small", "category": "factual"}
+{"query": "What year did the Berlin Wall fall?", "label": "small", "category": "factual"}
+{"query": "Who developed Python programming language?", "label": "small", "category": "factual"}
+{"query": "What is the atomic number of hydrogen?", "label": "small", "category": "factual"}
+{"query": "How many rings does Saturn have?", "label": "small", "category": "factual"}
+{"query": "What country is the Amazon River in?", "label": "small", "category": "factual"}
+{"query": "Who was Marie Curie?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Egypt?", "label": "small", "category": "factual"}
+{"query": "What does GPU stand for?", "label": "small", "category": "factual"}
+{"query": "Who is the CEO of Tesla?", "label": "small", "category": "factual"}
+{"query": "What is the boiling point of nitrogen?", "label": "small", "category": "factual"}
+{"query": "What year was the World Wide Web invented?", "label": "small", "category": "factual"}
+{"query": "What is the largest country by area?", "label": "small", "category": "factual"}
+{"query": "What is the national animal of Australia?", "label": "small", "category": "factual"}
+{"query": "What language is spoken in Egypt?", "label": "small", "category": "factual"}
+{"query": "How many bytes are in a megabyte?", "label": "small", "category": "factual"}
+{"query": "Who wrote 'The Great Gatsby'?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Nigeria?", "label": "small", "category": "factual"}
+{"query": "What year was Linux first released?", "label": "small", "category": "factual"}
+{"query": "What is the deepest lake in the world?", "label": "small", "category": "factual"}
+{"query": "Who founded Microsoft?", "label": "small", "category": "factual"}
+{"query": "What does TCP stand for?", "label": "small", "category": "factual"}
+{"query": "What is the chemical element symbol for silver?", "label": "small", "category": "factual"}
+{"query": "What year was the United States founded?", "label": "small", "category": "factual"}
+{"query": "How many chambers are in the human heart?", "label": "small", "category": "factual"}
+{"query": "Who invented the airplane?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Thailand?", "label": "small", "category": "factual"}
+{"query": "What does API stand for?", "label": "small", "category": "factual"}
+{"query": "Who wrote 'The Origin of Species'?", "label": "small", "category": "factual"}
+{"query": "What is the speed of sound in air?", "label": "small", "category": "factual"}
+{"query": "What country is the Sahara Desert in?", "label": "small", "category": "factual"}
+{"query": "Who is Nikola Tesla?", "label": "small", "category": "factual"}
+{"query": "What year was the Eiffel Tower built?", "label": "small", "category": "factual"}
+{"query": "What is the chemical symbol for gold?", "label": "small", "category": "factual"}
+{"query": "Who invented the printing press?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Pakistan?", "label": "small", "category": "factual"}
+{"query": "How many bits in a byte?", "label": "small", "category": "factual"}
+{"query": "What is the second largest planet?", "label": "small", "category": "factual"}
+{"query": "What language is spoken in Switzerland?", "label": "small", "category": "factual"}
+{"query": "What year was Facebook founded?", "label": "small", "category": "factual"}
+{"query": "Who invented the transistor?", "label": "small", "category": "factual"}
+{"query": "What is the currency of China?", "label": "small", "category": "factual"}
+{"query": "What does LAN stand for?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Sweden?", "label": "small", "category": "factual"}
+{"query": "How many bones are in the adult human body?", "label": "small", "category": "factual"}
+{"query": "Who is Alan Turing?", "label": "small", "category": "factual"}
+{"query": "What is the boiling point of ethanol?", "label": "small", "category": "factual"}
+{"query": "What is 13 times 7?", "label": "small", "category": "math_simple"}
+{"query": "What is 250 divided by 5?", "label": "small", "category": "math_simple"}
+{"query": "Convert 10 miles to kilometers", "label": "small", "category": "math_simple"}
+{"query": "What is 40% of 300?", "label": "small", "category": "math_simple"}
+{"query": "What is the square root of 256?", "label": "small", "category": "math_simple"}
+{"query": "How many seconds are in a day?", "label": "small", "category": "math_simple"}
+{"query": "What is 2 to the power of 8?", "label": "small", "category": "math_simple"}
+{"query": "Convert 37 degrees Celsius to Fahrenheit", "label": "small", "category": "math_simple"}
+{"query": "What is 999 divided by 9?", "label": "small", "category": "math_simple"}
+{"query": "How many feet are in 5 miles?", "label": "small", "category": "math_simple"}
+{"query": "What is 18 squared?", "label": "small", "category": "math_simple"}
+{"query": "Convert 2.5 hours to minutes", "label": "small", "category": "math_simple"}
+{"query": "How many ounces in 3 pounds?", "label": "small", "category": "math_simple"}
+{"query": "What is 15% of 80?", "label": "small", "category": "math_simple"}
+{"query": "How many days are in 5 years?", "label": "small", "category": "math_simple"}
+{"query": "What is 3.14 times 100?", "label": "small", "category": "math_simple"}
+{"query": "Convert 1000 grams to kilograms", "label": "small", "category": "math_simple"}
+{"query": "What is 64 divided by 8?", "label": "small", "category": "math_simple"}
+{"query": "How many minutes in a week?", "label": "small", "category": "math_simple"}
+{"query": "What is 5 factorial?", "label": "small", "category": "math_simple"}
+{"query": "Convert 500 milliliters to liters", "label": "small", "category": "math_simple"}
+{"query": "What is 11 times 11?", "label": "small", "category": "math_simple"}
+{"query": "How many inches in 3 feet?", "label": "small", "category": "math_simple"}
+{"query": "What is 1000 minus 376?", "label": "small", "category": "math_simple"}
+{"query": "Convert 90 degrees Fahrenheit to Celsius", "label": "small", "category": "math_simple"}
+{"query": "What is the cube root of 27?", "label": "small", "category": "math_simple"}
+{"query": "How many hours in a week?", "label": "small", "category": "math_simple"}
+{"query": "What is 20% of 500?", "label": "small", "category": "math_simple"}
+{"query": "What is 144 divided by 12?", "label": "small", "category": "math_simple"}
+{"query": "Convert 5 liters to gallons", "label": "small", "category": "math_simple"}
+{"query": "Is Python dynamically typed?", "label": "small", "category": "yes_no"}
+{"query": "Is Pluto a planet?", "label": "small", "category": "yes_no"}
+{"query": "Is Rust memory-safe?", "label": "small", "category": "yes_no"}
+{"query": "Is the moon larger than Earth?", "label": "small", "category": "yes_no"}
+{"query": "Does Python support multiple inheritance?", "label": "small", "category": "yes_no"}
+{"query": "Is Docker written in Go?", "label": "small", "category": "yes_no"}
+{"query": "Is 0 an even number?", "label": "small", "category": "yes_no"}
+{"query": "Is Node.js single-threaded?", "label": "small", "category": "yes_no"}
+{"query": "Is hydrogen a metal?", "label": "small", "category": "yes_no"}
+{"query": "Is SQL a programming language?", "label": "small", "category": "yes_no"}
+{"query": "Is the Great Wall visible from the moon?", "label": "small", "category": "yes_no"}
+{"query": "Can sharks smell blood from far away?", "label": "small", "category": "yes_no"}
+{"query": "Is Vue.js a front-end framework?", "label": "small", "category": "yes_no"}
+{"query": "Is IPv6 backward compatible with IPv4?", "label": "small", "category": "yes_no"}
+{"query": "Is the Earth older than the Sun?", "label": "small", "category": "yes_no"}
+{"query": "Is Kotlin interoperable with Java?", "label": "small", "category": "yes_no"}
+{"query": "Is Redis an in-memory database?", "label": "small", "category": "yes_no"}
+{"query": "Can you run Python 2 code in Python 3?", "label": "small", "category": "yes_no"}
+{"query": "Is the browser single-threaded?", "label": "small", "category": "yes_no"}
+{"query": "Is WebAssembly faster than JavaScript?", "label": "small", "category": "yes_no"}
+{"query": "Is recursion faster than iteration in Python?", "label": "small", "category": "yes_no"}
+{"query": "Does Java have pointers?", "label": "small", "category": "yes_no"}
+{"query": "Is Git distributed?", "label": "small", "category": "yes_no"}
+{"query": "Is machine learning a subset of AI?", "label": "small", "category": "yes_no"}
+{"query": "Is GraphQL a database?", "label": "small", "category": "yes_no"}
+{"query": "What is a pointer in programming?", "label": "small", "category": "definitions"}
+{"query": "Define inheritance in OOP", "label": "small", "category": "definitions"}
+{"query": "What is a mutex?", "label": "small", "category": "definitions"}
+{"query": "Define idempotency", "label": "small", "category": "definitions"}
+{"query": "What is a REST API?", "label": "small", "category": "definitions"}
+{"query": "What does CRUD stand for?", "label": "small", "category": "definitions"}
+{"query": "Define technical debt", "label": "small", "category": "definitions"}
+{"query": "What is a singleton pattern?", "label": "small", "category": "definitions"}
+{"query": "What is eventual consistency?", "label": "small", "category": "definitions"}
+{"query": "Define sharding in databases", "label": "small", "category": "definitions"}
+{"query": "What is a race condition?", "label": "small", "category": "definitions"}
+{"query": "What does DRY stand for in programming?", "label": "small", "category": "definitions"}
+{"query": "Define big-O notation", "label": "small", "category": "definitions"}
+{"query": "What is a callback function?", "label": "small", "category": "definitions"}
+{"query": "What is a microservice?", "label": "small", "category": "definitions"}
+{"query": "Define load balancing", "label": "small", "category": "definitions"}
+{"query": "What is a CDN?", "label": "small", "category": "definitions"}
+{"query": "What does MVP stand for in product development?", "label": "small", "category": "definitions"}
+{"query": "Define overfitting in machine learning", "label": "small", "category": "definitions"}
+{"query": "What is a hyperparameter?", "label": "small", "category": "definitions"}
+{"query": "Define tokenization in NLP", "label": "small", "category": "definitions"}
+{"query": "What is backpropagation?", "label": "small", "category": "definitions"}
+{"query": "What is a closure in programming?", "label": "small", "category": "definitions"}
+{"query": "Define garbage collection", "label": "small", "category": "definitions"}
+{"query": "What is a deadlock?", "label": "small", "category": "definitions"}
+{"query": "What is a foreign key?", "label": "small", "category": "definitions"}
+{"query": "Define blue-green deployment", "label": "small", "category": "definitions"}
+{"query": "What is a canary release?", "label": "small", "category": "definitions"}
+{"query": "What is an ORM?", "label": "small", "category": "definitions"}
+{"query": "Define feature engineering", "label": "small", "category": "definitions"}
+{"query": "Write a haiku about Python", "label": "small", "category": "short_creative"}
+{"query": "Give me a pun about databases", "label": "small", "category": "short_creative"}
+{"query": "Tell me a joke about recursion", "label": "small", "category": "short_creative"}
+{"query": "Give me a motivational quote for developers", "label": "small", "category": "short_creative"}
+{"query": "Tell me a fun programming fact", "label": "small", "category": "short_creative"}
+{"query": "Write a limerick about merge conflicts", "label": "small", "category": "short_creative"}
+{"query": "Give me a clever team name for a hackathon", "label": "small", "category": "short_creative"}
+{"query": "Tell me a joke about null pointers", "label": "small", "category": "short_creative"}
+{"query": "Write a two-line poem about APIs", "label": "small", "category": "short_creative"}
+{"query": "Make up a name for a startup that sells developer tools", "label": "small", "category": "short_creative"}
+{"query": "Give me a pun about machine learning", "label": "small", "category": "short_creative"}
+{"query": "Tell me a riddle about a hash table", "label": "small", "category": "short_creative"}
+{"query": "Write a haiku about refactoring", "label": "small", "category": "short_creative"}
+{"query": "Give me a tagline for a code review tool", "label": "small", "category": "short_creative"}
+{"query": "Tell me a knock-knock joke about cloud computing", "label": "small", "category": "short_creative"}
+{"query": "Make up a metaphor for technical debt", "label": "small", "category": "short_creative"}
+{"query": "Give me a funny variable name for speed", "label": "small", "category": "short_creative"}
+{"query": "Write a one-sentence story about a developer on deadline", "label": "small", "category": "short_creative"}
+{"query": "Give me a creative name for a DevOps conference", "label": "small", "category": "short_creative"}
+{"query": "Tell me a silly fact about programming languages", "label": "small", "category": "short_creative"}
+{"query": "Write a haiku about a segfault", "label": "small", "category": "short_creative"}
+{"query": "Give me a rhyme about git rebase", "label": "small", "category": "short_creative"}
+{"query": "Make up a pun about Docker containers", "label": "small", "category": "short_creative"}
+{"query": "Tell me a joke about agile sprints", "label": "small", "category": "short_creative"}
+{"query": "Give me a one-liner about unit tests", "label": "small", "category": "short_creative"}
+{"query": "Write a limerick about CI/CD pipelines", "label": "small", "category": "short_creative"}
+{"query": "Give me a fun fact about Alan Turing", "label": "small", "category": "short_creative"}
+{"query": "Make up a tagline for a monitoring tool", "label": "small", "category": "short_creative"}
+{"query": "Tell me a riddle about a binary tree", "label": "small", "category": "short_creative"}
+{"query": "Give me a motivational quote about debugging", "label": "small", "category": "short_creative"}
+{"query": "Can you elaborate on that?", "label": "small", "category": "conversational"}
+{"query": "What did you mean by that last part?", "label": "small", "category": "conversational"}
+{"query": "Could you give me an example?", "label": "small", "category": "conversational"}
+{"query": "Can you say that more simply?", "label": "small", "category": "conversational"}
+{"query": "OK and then what happens?", "label": "small", "category": "conversational"}
+{"query": "What does that mean in practice?", "label": "small", "category": "conversational"}
+{"query": "Can you repeat that?", "label": "small", "category": "conversational"}
+{"query": "What was the last thing you said?", "label": "small", "category": "conversational"}
+{"query": "I didn't quite get that, can you try again?", "label": "small", "category": "conversational"}
+{"query": "Can you put that in plain English?", "label": "small", "category": "conversational"}
+{"query": "Can you give a shorter version?", "label": "small", "category": "conversational"}
+{"query": "Can you be more specific?", "label": "small", "category": "conversational"}
+{"query": "What does that look like in code?", "label": "small", "category": "conversational"}
+{"query": "Could you give me a real world example of that?", "label": "small", "category": "conversational"}
+{"query": "Can you elaborate on the second point?", "label": "small", "category": "conversational"}
+{"query": "OK what about the alternative approach?", "label": "small", "category": "conversational"}
+{"query": "Can you expand on why that matters?", "label": "small", "category": "conversational"}
+{"query": "What's the tldr?", "label": "small", "category": "conversational"}
+{"query": "Give me a one sentence summary of the above", "label": "small", "category": "conversational"}
+{"query": "Is there anything else I should know?", "label": "small", "category": "conversational"}
+{"query": "Can you double-check that answer?", "label": "small", "category": "conversational"}
+{"query": "What's the main takeaway here?", "label": "small", "category": "conversational"}
+{"query": "What else is important?", "label": "small", "category": "conversational"}
+{"query": "OK and what about edge cases?", "label": "small", "category": "conversational"}
+{"query": "Can you list the key points?", "label": "small", "category": "conversational"}
+{"query": "Why does Python say 'list index out of range'?", "label": "small", "category": "debug_simple"}
+{"query": "What causes a 'None' result when I expected a value?", "label": "small", "category": "debug_simple"}
+{"query": "Why is my for loop running one time too many?", "label": "small", "category": "debug_simple"}
+{"query": "Why is Python printing 'NoneType object is not subscriptable'?", "label": "small", "category": "debug_simple"}
+{"query": "What does 'KeyError' mean in Python?", "label": "small", "category": "debug_simple"}
+{"query": "Why does my variable print as undefined in JavaScript?", "label": "small", "category": "debug_simple"}
+{"query": "What does 'AttributeError: object has no attribute' mean?", "label": "small", "category": "debug_simple"}
+{"query": "Why am I getting a 404 error from my API?", "label": "small", "category": "debug_simple"}
+{"query": "What does 'IndentationError' mean in Python?", "label": "small", "category": "debug_simple"}
+{"query": "Why is my CSS not applying to the page?", "label": "small", "category": "debug_simple"}
+{"query": "What does 'TypeError: int object is not iterable' mean?", "label": "small", "category": "debug_simple"}
+{"query": "Why does my Python script work locally but not on the server?", "label": "small", "category": "debug_simple"}
+{"query": "What does a 500 internal server error usually mean?", "label": "small", "category": "debug_simple"}
+{"query": "Why is my SQL query returning duplicate rows?", "label": "small", "category": "debug_simple"}
+{"query": "What causes a 'connection refused' error?", "label": "small", "category": "debug_simple"}
+{"query": "Why am I getting a CORS error?", "label": "small", "category": "debug_simple"}
+{"query": "What does 'pip: command not found' mean?", "label": "small", "category": "debug_simple"}
+{"query": "Why is my git push being rejected?", "label": "small", "category": "debug_simple"}
+{"query": "What does 'ImportError: No module named X' mean?", "label": "small", "category": "debug_simple"}
+{"query": "Why does JSON.parse throw an error?", "label": "small", "category": "debug_simple"}
+{"query": "What does 'permission denied' mean when running a script?", "label": "small", "category": "debug_simple"}
+{"query": "Why is my Docker container exiting immediately?", "label": "small", "category": "debug_simple"}
+{"query": "What does 'segmentation fault' mean?", "label": "small", "category": "debug_simple"}
+{"query": "Why is my React component not re-rendering?", "label": "small", "category": "debug_simple"}
+{"query": "What does 'undefined is not a function' mean in JavaScript?", "label": "small", "category": "debug_simple"}
+{"query": "Prove that log base 2 of 3 is irrational.", "label": "big", "category": "proofs"}
+{"query": "Prove that any integer squared is non-negative.", "label": "big", "category": "proofs"}
+{"query": "Derive the formula for the sum of the first n integers.", "label": "big", "category": "proofs"}
+{"query": "Prove that the set of real numbers is uncountable (Cantor's diagonal argument).", "label": "big", "category": "proofs"}
+{"query": "Show that every subgroup of a cyclic group is cyclic.", "label": "big", "category": "proofs"}
+{"query": "Prove the Pythagorean theorem using area arguments.", "label": "big", "category": "proofs"}
+{"query": "Prove that a polynomial of degree n has at most n roots.", "label": "big", "category": "proofs"}
+{"query": "Derive the variance formula E[X^2] - (E[X])^2 from first principles.", "label": "big", "category": "proofs"}
+{"query": "Prove that the sum of angles in a triangle is 180 degrees.", "label": "big", "category": "proofs"}
+{"query": "Show by induction that 2^n > n for all natural numbers n.", "label": "big", "category": "proofs"}
+{"query": "Prove that if a divides b and b divides c then a divides c.", "label": "big", "category": "proofs"}
+{"query": "Derive the formula for the eigenvalues of a 2x2 matrix.", "label": "big", "category": "proofs"}
+{"query": "Prove that there is no rational number whose square equals 3.", "label": "big", "category": "proofs"}
+{"query": "Show that the derivative of sin(x) is cos(x) from the limit definition.", "label": "big", "category": "proofs"}
+{"query": "Prove the AM-GM inequality for two positive real numbers.", "label": "big", "category": "proofs"}
+{"query": "Derive the softmax gradient with respect to its inputs.", "label": "big", "category": "proofs"}
+{"query": "Show that a continuous function on [a,b] is uniformly continuous.", "label": "big", "category": "proofs"}
+{"query": "Prove that the inverse of a bijective function is also bijective.", "label": "big", "category": "proofs"}
+{"query": "Prove that BFS finds the shortest path in an unweighted graph.", "label": "big", "category": "proofs"}
+{"query": "Show that the mutual information I(X;Y) >= 0 for any joint distribution.", "label": "big", "category": "proofs"}
+{"query": "Design a global leaderboard service for a mobile game with 50 million daily users.", "label": "big", "category": "system_design"}
+{"query": "How would you build a distributed file storage system like Dropbox?", "label": "big", "category": "system_design"}
+{"query": "Design a real-time sports score tracker that serves millions of users during peak events.", "label": "big", "category": "system_design"}
+{"query": "How would you architect a multi-region active-passive database failover system?", "label": "big", "category": "system_design"}
+{"query": "Design a social media platform's follower/following graph at Twitter scale.", "label": "big", "category": "system_design"}
+{"query": "How would you build a distributed configuration management system?", "label": "big", "category": "system_design"}
+{"query": "Design an e-commerce product catalog search with faceted filters for 100M products.", "label": "big", "category": "system_design"}
+{"query": "How would you architect a real-time bidding (RTB) system for online advertising?", "label": "big", "category": "system_design"}
+{"query": "Design a news feed that shows personalized content from people a user follows.", "label": "big", "category": "system_design"}
+{"query": "How would you build a globally distributed key-value store with tunable consistency?", "label": "big", "category": "system_design"}
+{"query": "Design a financial ledger system with ACID guarantees and audit trail.", "label": "big", "category": "system_design"}
+{"query": "How would you build a system to detect duplicate images across a photo library?", "label": "big", "category": "system_design"}
+{"query": "Design a distributed tracing system for a microservices architecture with 1000 services.", "label": "big", "category": "system_design"}
+{"query": "How would you architect a video transcoding pipeline for user-uploaded content?", "label": "big", "category": "system_design"}
+{"query": "Design a ride-hailing driver-matching system that minimizes wait time.", "label": "big", "category": "system_design"}
+{"query": "How would you build an API gateway that handles auth, rate limiting, and routing?", "label": "big", "category": "system_design"}
+{"query": "Design a smart home automation backend that handles millions of IoT device events.", "label": "big", "category": "system_design"}
+{"query": "How would you architect a streaming analytics platform for clickstream data?", "label": "big", "category": "system_design"}
+{"query": "Design a calendar scheduling system with conflict detection across time zones.", "label": "big", "category": "system_design"}
+{"query": "How would you build a price comparison engine for e-commerce products?", "label": "big", "category": "system_design"}
+{"query": "Design a system to enforce API quotas per tenant in a multi-tenant SaaS.", "label": "big", "category": "system_design"}
+{"query": "How would you build a feature flag system that supports gradual rollouts?", "label": "big", "category": "system_design"}
+{"query": "Design a distributed metrics aggregation pipeline for a monitoring platform.", "label": "big", "category": "system_design"}
+{"query": "How would you architect a service that generates PDF invoices at 10K/hour?", "label": "big", "category": "system_design"}
+{"query": "Design a chat moderation pipeline for a platform with 10M messages per day.", "label": "big", "category": "system_design"}
+{"query": "How would you build a recommendation system for an e-learning platform?", "label": "big", "category": "system_design"}
+{"query": "Design a document versioning system like Google Docs revision history.", "label": "big", "category": "system_design"}
+{"query": "How would you architect an event-sourcing system with replay and snapshots?", "label": "big", "category": "system_design"}
+{"query": "Design a data lake ingestion pipeline from 20 heterogeneous source systems.", "label": "big", "category": "system_design"}
+{"query": "How would you build a zero-trust security model for a cloud-native application?", "label": "big", "category": "system_design"}
+{"query": "Analyze the trade-offs between synchronous and asynchronous API design patterns.", "label": "big", "category": "analysis"}
+{"query": "Explain how attention is computed in multi-head self-attention and why multiple heads help.", "label": "big", "category": "analysis"}
+{"query": "Analyze the pros and cons of eventual consistency in distributed databases.", "label": "big", "category": "analysis"}
+{"query": "Explain why deep neural networks can overfit and what regularization strategies prevent it.", "label": "big", "category": "analysis"}
+{"query": "Analyze the root causes of the dot-com bubble and what patterns repeated in crypto.", "label": "big", "category": "analysis"}
+{"query": "Explain the trade-offs between static and dynamic typing from a software engineering perspective.", "label": "big", "category": "analysis"}
+{"query": "Analyze how Kubernetes achieves high availability for stateful workloads.", "label": "big", "category": "analysis"}
+{"query": "Explain why gradient vanishing happens in deep networks and how modern architectures solve it.", "label": "big", "category": "analysis"}
+{"query": "Analyze the societal implications of algorithmic content recommendation systems.", "label": "big", "category": "analysis"}
+{"query": "Explain how compilers perform dead code elimination and why it matters.", "label": "big", "category": "analysis"}
+{"query": "Analyze the economic incentives behind open-source software development.", "label": "big", "category": "analysis"}
+{"query": "Explain how database query optimizers choose between index scan and sequential scan.", "label": "big", "category": "analysis"}
+{"query": "Analyze the security implications of using third-party JavaScript dependencies.", "label": "big", "category": "analysis"}
+{"query": "Explain why batch normalization accelerates training in deep neural networks.", "label": "big", "category": "analysis"}
+{"query": "Analyze the game theory behind network effects in platform businesses.", "label": "big", "category": "analysis"}
+{"query": "Explain how modern CPUs achieve instruction-level parallelism with out-of-order execution.", "label": "big", "category": "analysis"}
+{"query": "Analyze the trade-offs between columnar and row-oriented storage for analytics.", "label": "big", "category": "analysis"}
+{"query": "Explain why distributed transactions are hard and what saga pattern solves.", "label": "big", "category": "analysis"}
+{"query": "Analyze how social media algorithms affect political polarization.", "label": "big", "category": "analysis"}
+{"query": "Explain the mathematical intuition behind principal component analysis.", "label": "big", "category": "analysis"}
+{"query": "Analyze the engineering challenges of building a global DNS infrastructure.", "label": "big", "category": "analysis"}
+{"query": "Explain how zero-knowledge proofs work and what problems they solve.", "label": "big", "category": "analysis"}
+{"query": "Analyze the impact of Moore's law slowing down on software engineering.", "label": "big", "category": "analysis"}
+{"query": "Explain how eBPF enables observability without traditional kernel modules.", "label": "big", "category": "analysis"}
+{"query": "Analyze the differences between actor model concurrency and shared-memory threading.", "label": "big", "category": "analysis"}
+{"query": "Explain why HTTP/3 (QUIC) improves performance over HTTP/2 for lossy networks.", "label": "big", "category": "analysis"}
+{"query": "Analyze the trade-offs between tight and loose coupling in microservices.", "label": "big", "category": "analysis"}
+{"query": "Explain how neural architecture search works and what its computational costs are.", "label": "big", "category": "analysis"}
+{"query": "Analyze the engineering trade-offs between building versus buying infrastructure.", "label": "big", "category": "analysis"}
+{"query": "Explain how memory safety bugs (use-after-free, buffer overflow) occur and how to prevent them.", "label": "big", "category": "analysis"}
+{"query": "What is the best cloud provider?", "label": "big", "category": "ambiguous"}
+{"query": "Should I learn Go or Python first?", "label": "big", "category": "ambiguous"}
+{"query": "What is better: SQL or NoSQL?", "label": "big", "category": "ambiguous"}
+{"query": "How does inflation happen?", "label": "big", "category": "ambiguous"}
+{"query": "What is the most important thing in software engineering?", "label": "big", "category": "ambiguous"}
+{"query": "Why do people use Linux?", "label": "big", "category": "ambiguous"}
+{"query": "What is the best way to debug code?", "label": "big", "category": "ambiguous"}
+{"query": "Is Agile better than Waterfall?", "label": "big", "category": "ambiguous"}
+{"query": "How does the brain form memories?", "label": "big", "category": "ambiguous"}
+{"query": "What is the best way to scale a startup?", "label": "big", "category": "ambiguous"}
+{"query": "Is Java still relevant in 2025?", "label": "big", "category": "ambiguous"}
+{"query": "What is the impact of AI on education?", "label": "big", "category": "ambiguous"}
+{"query": "Should I use tabs or spaces?", "label": "small", "category": "ambiguous"}
+{"query": "What is 42?", "label": "small", "category": "ambiguous"}
+{"query": "Name a fruit", "label": "small", "category": "ambiguous"}
+{"query": "What's a random number?", "label": "small", "category": "ambiguous"}
+{"query": "What is your name?", "label": "small", "category": "ambiguous"}
+{"query": "Are you an AI?", "label": "small", "category": "ambiguous"}
+{"query": "What color is the sky?", "label": "small", "category": "ambiguous"}
+{"query": "What's bigger, an elephant or a cat?", "label": "small", "category": "ambiguous"}
+{"query": "What is the best operating system?", "label": "big", "category": "ambiguous"}
+{"query": "Is open source better than closed source?", "label": "big", "category": "ambiguous"}
+{"query": "What are the implications of weak typing in JavaScript?", "label": "big", "category": "ambiguous"}
+{"query": "How do I choose a framework for a new web project?", "label": "big", "category": "ambiguous"}
+{"query": "What is the effect of sleep deprivation on software engineers?", "label": "big", "category": "ambiguous"}
+{"query": "Is functional programming better than OOP?", "label": "big", "category": "ambiguous"}
+{"query": "What number comes after 5?", "label": "small", "category": "ambiguous"}
+{"query": "Name a programming language", "label": "small", "category": "ambiguous"}
+{"query": "What time is it right now?", "label": "small", "category": "ambiguous"}
+{"query": "Do you like music?", "label": "small", "category": "ambiguous"}
+{"query": "What are the trade-offs of microservices at an early startup?", "label": "big", "category": "ambiguous"}
+{"query": "How does container orchestration work?", "label": "big", "category": "ambiguous"}
+{"query": "What is the effect of poor code quality on developer velocity?", "label": "big", "category": "ambiguous"}
+{"query": "Should I use REST or GraphQL for a new API?", "label": "big", "category": "ambiguous"}
+{"query": "What is a good book to learn algorithms?", "label": "small", "category": "ambiguous"}
+{"query": "What does Python do well?", "label": "small", "category": "ambiguous"}
+{"query": "What is the most popular programming language?", "label": "small", "category": "ambiguous"}
+{"query": "How long does it take to learn Python?", "label": "small", "category": "ambiguous"}
+{"query": "Is coding hard to learn?", "label": "small", "category": "ambiguous"}
+{"query": "What is the future of AI?", "label": "big", "category": "ambiguous"}
+{"query": "What does the research say about the effectiveness of pair programming?", "label": "big", "category": "research_synthesis"}
+{"query": "Synthesize the current evidence on whether agile outperforms waterfall.", "label": "big", "category": "research_synthesis"}
+{"query": "What does the literature say about burnout rates in software engineers?", "label": "big", "category": "research_synthesis"}
+{"query": "What are the findings on the effect of code review on bug detection rates?", "label": "big", "category": "research_synthesis"}
+{"query": "Summarize what studies show about the impact of technical debt on velocity.", "label": "big", "category": "research_synthesis"}
+{"query": "What does the research say about the long-term effectiveness of remote work?", "label": "big", "category": "research_synthesis"}
+{"query": "What do the findings from recent alignment research say about emergent capabilities?", "label": "big", "category": "research_synthesis"}
+{"query": "Synthesize the evidence on the effectiveness of test-driven development.", "label": "big", "category": "research_synthesis"}
+{"query": "What does the literature say about monorepos versus polyrepos in practice?", "label": "big", "category": "research_synthesis"}
+{"query": "What does research show about the correlation between code coverage and bug rates?", "label": "big", "category": "research_synthesis"}
+{"query": "Summarize what studies say about the productivity impact of open-plan offices.", "label": "big", "category": "research_synthesis"}
+{"query": "What do large-scale studies show about why software projects fail?", "label": "big", "category": "research_synthesis"}
+{"query": "What does the literature say about gender diversity's effect on team performance?", "label": "big", "category": "research_synthesis"}
+{"query": "Synthesize findings on the effectiveness of code comments for comprehension.", "label": "big", "category": "research_synthesis"}
+{"query": "What do studies show about the ROI of automated testing in software projects?", "label": "big", "category": "research_synthesis"}
+{"query": "What does research say about the effect of stand-up meetings on team coordination?", "label": "big", "category": "research_synthesis"}
+{"query": "Summarize the academic findings on microservices versus monolith performance.", "label": "big", "category": "research_synthesis"}
+{"query": "What does the evidence say about how developers learn new technologies?", "label": "big", "category": "research_synthesis"}
+{"query": "What does research show about the effectiveness of code ownership practices?", "label": "big", "category": "research_synthesis"}
+{"query": "Synthesize the current state of research on LLM reasoning abilities.", "label": "big", "category": "research_synthesis"}
+{"query": "What do studies say about the effect of onboarding quality on new hire retention?", "label": "big", "category": "research_synthesis"}
+{"query": "What does the literature say about technical interview validity and bias?", "label": "big", "category": "research_synthesis"}
+{"query": "What are the findings on ML model fairness from recent research?", "label": "big", "category": "research_synthesis"}
+{"query": "Summarize what research shows about the health effects of excessive screen time.", "label": "big", "category": "research_synthesis"}
+{"query": "What do studies show about the most effective pair-programming techniques?", "label": "big", "category": "research_synthesis"}
+{"query": "What does the evidence say about the effectiveness of retrospectives in agile teams?", "label": "big", "category": "research_synthesis"}
+{"query": "Synthesize the current research on catastrophic forgetting in neural networks.", "label": "big", "category": "research_synthesis"}
+{"query": "What do studies show about the impact of logging verbosity on debugging time?", "label": "big", "category": "research_synthesis"}
+{"query": "What does the literature say about knowledge transfer during developer offboarding?", "label": "big", "category": "research_synthesis"}
+{"query": "What are the research findings on the impact of documentation quality on productivity?", "label": "big", "category": "research_synthesis"}
+{"query": "How do I build a 6-month learning plan to become a backend engineer?", "label": "big", "category": "career_learning"}
+{"query": "What skills are most important for ML engineers in 2025?", "label": "big", "category": "career_learning"}
+{"query": "How should I prepare for system design interviews in 3 months?", "label": "big", "category": "career_learning"}
+{"query": "What is the best way to make the transition from QA to software development?", "label": "big", "category": "career_learning"}
+{"query": "How do I negotiate equity when joining a Series B startup?", "label": "big", "category": "career_learning"}
+{"query": "What does it take to become a staff engineer?", "label": "big", "category": "career_learning"}
+{"query": "How do I overcome imposter syndrome as a junior developer?", "label": "big", "category": "career_learning"}
+{"query": "What books should I read to become a better software architect?", "label": "big", "category": "career_learning"}
+{"query": "How do I build my personal brand as a developer on social media?", "label": "big", "category": "career_learning"}
+{"query": "What should I put on my resume as a new grad applying for ML roles?", "label": "big", "category": "career_learning"}
+{"query": "How do I transition from data analyst to data scientist?", "label": "big", "category": "career_learning"}
+{"query": "What are the most important things to know before joining a startup?", "label": "big", "category": "career_learning"}
+{"query": "How do I stay relevant as a software engineer as AI takes over more tasks?", "label": "big", "category": "career_learning"}
+{"query": "What is the best way to get a promotion at a FAANG company?", "label": "big", "category": "career_learning"}
+{"query": "How do I evaluate a company's engineering culture before accepting an offer?", "label": "big", "category": "career_learning"}
+{"query": "What courses and projects should I do to break into data science?", "label": "big", "category": "career_learning"}
+{"query": "How do I build deep expertise in distributed systems as a generalist engineer?", "label": "big", "category": "career_learning"}
+{"query": "What are the signs that it's time to switch jobs?", "label": "big", "category": "career_learning"}
+{"query": "How do I give effective technical presentations to non-technical stakeholders?", "label": "big", "category": "career_learning"}
+{"query": "What should I know about engineering management before making the switch?", "label": "big", "category": "career_learning"}
+{"query": "How do I develop good coding habits that will serve me for 20 years?", "label": "big", "category": "career_learning"}
+{"query": "What is the most effective way to do code review as a senior engineer?", "label": "big", "category": "career_learning"}
+{"query": "How do I break into security engineering from a software background?", "label": "big", "category": "career_learning"}
+{"query": "What are the differences between working at a startup, mid-size company, and FAANG?", "label": "big", "category": "career_learning"}
+{"query": "How should I approach learning Rust coming from a Python background?", "label": "big", "category": "career_learning"}
+{"query": "What is the best way to onboard to a new codebase quickly?", "label": "big", "category": "career_learning"}
+{"query": "How do I become a better technical interviewer?", "label": "big", "category": "career_learning"}
+{"query": "What strategies help engineers grow their scope of impact?", "label": "big", "category": "career_learning"}
+{"query": "How do I handle disagreements with my engineering manager?", "label": "big", "category": "career_learning"}
+{"query": "What are the best ways to learn about the business side of software companies?", "label": "big", "category": "career_learning"}
+{"query": "Should AI have rights?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is it ethical to train AI on data scraped from the web without consent?", "label": "big", "category": "ethical_philosophical"}
+{"query": "What are the ethical implications of fully autonomous weapons?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is it wrong to replace human workers with AI?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Should social media companies be responsible for content moderation?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is genetic engineering of humans ethical?", "label": "big", "category": "ethical_philosophical"}
+{"query": "What are the moral implications of mass surveillance for national security?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Should programmers be held legally liable for bugs in their software?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is it ethical to use AI to generate art that mimics a specific artist's style?", "label": "big", "category": "ethical_philosophical"}
+{"query": "What are the ethical obligations of tech companies to the societies they operate in?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is privacy a fundamental right in a digital age?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Should AI be allowed to make life-or-death medical decisions?", "label": "big", "category": "ethical_philosophical"}
+{"query": "What is the trolley problem and how does it apply to self-driving car ethics?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is open-sourcing powerful AI models responsible?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Should governments regulate large AI models?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is it ethical to deploy AI in hiring decisions?", "label": "big", "category": "ethical_philosophical"}
+{"query": "What are the philosophical implications of AGI for human identity?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is it ethical to use AI to generate news articles?", "label": "big", "category": "ethical_philosophical"}
+{"query": "What are the moral duties of engineers who build surveillance technology?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Should tech companies be broken up using antitrust law?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is it ethical to patent AI-generated inventions?", "label": "big", "category": "ethical_philosophical"}
+{"query": "What are the implications of digital immortality through mind uploading?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is it ethical to build AI systems that manipulate human behavior?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Should AI-generated text be labeled as such?", "label": "big", "category": "ethical_philosophical"}
+{"query": "What are the ethical concerns with predictive policing algorithms?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is it moral to build systems that optimize for engagement over user well-being?", "label": "big", "category": "ethical_philosophical"}
+{"query": "What philosophical framework should guide AI alignment efforts?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Should nations share AI research openly or treat it as a strategic asset?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is consciousness required for moral consideration?", "label": "big", "category": "ethical_philosophical"}
+{"query": "What obligations do AI developers have to prevent misuse of their systems?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Compare PostgreSQL versus MySQL for a transactional web application.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the feature differences between PyTorch and TensorFlow?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Redis versus Memcached for session storage.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between gRPC and REST for internal microservices?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Kubernetes versus Docker Swarm for container orchestration.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between SQLite, PostgreSQL, and MySQL?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare RabbitMQ versus Apache Kafka for event streaming.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between Terraform and Pulumi for infrastructure as code?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Elasticsearch versus Solr for full-text search.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the trade-offs between Prometheus and Datadog for monitoring?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Next.js versus Remix for server-side rendering in React.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between FastAPI and Flask for Python web APIs?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare AWS Lambda versus Google Cloud Run for serverless workloads.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between Spark and Flink for stream processing?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare MongoDB versus Cassandra for write-heavy distributed workloads.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between Nginx and Apache as web servers?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Ansible versus Chef for configuration management.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the trade-offs between gRPC and GraphQL for API design?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Snowflake versus BigQuery for cloud data warehousing.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between TypeScript strict mode settings?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Celery versus Dramatiq as Python task queue frameworks.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between Jenkins and GitHub Actions for CI/CD?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare DynamoDB versus Cosmos DB for globally distributed NoSQL.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the trade-offs between JWT and session cookies for authentication?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Istio versus Linkerd for service mesh in Kubernetes.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between BERT-based and GPT-based language models for NLP tasks?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Kafka Streams versus Apache Flink for stateful stream processing.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between Airflow versus Prefect for workflow orchestration?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare LangChain versus LlamaIndex for building RAG applications.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between Kubernetes CronJob and a standalone scheduler service?", "label": "big", "category": "comparison_technical"}
+{"query": "Write a Python implementation of a distributed lock using Redis and explain Redlock.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement a skip list data structure in Python with insert, delete, and search.", "label": "big", "category": "multi_step_code"}
+{"query": "Write a Python function that topologically sorts a DAG and explain the algorithm.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement a simple key-value store with LSM tree storage in Python.", "label": "big", "category": "multi_step_code"}
+{"query": "Write a Python decorator that enforces strict function argument types at runtime.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement an LFU (Least Frequently Used) cache in Python. Compare it to LRU.", "label": "big", "category": "multi_step_code"}
+{"query": "Write a concurrent HTTP server in Python using asyncio and explain backpressure.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement a B-tree in Python with insertion and search. Explain the node split.", "label": "big", "category": "multi_step_code"}
+{"query": "Write a minimal in-memory message queue with pub/sub in Python.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement a Bayesian Naive Bayes classifier from scratch in NumPy.", "label": "big", "category": "multi_step_code"}
+{"query": "Write a simple property-based testing framework in Python. Explain shrinking.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement Huffman coding in Python. Explain the entropy minimization.", "label": "big", "category": "multi_step_code"}
+{"query": "Write a Python implementation of the Raft leader election algorithm.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement a simple regex engine in Python that supports ., *, and + operators.", "label": "big", "category": "multi_step_code"}
+{"query": "Write a PyTorch training loop with gradient accumulation and mixed precision.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement consistent hashing with virtual nodes in Python.", "label": "big", "category": "multi_step_code"}
+{"query": "Write a Python coroutine-based event loop and explain how it handles I/O.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement a CRDT (counter) in Python for distributed conflict-free state.", "label": "big", "category": "multi_step_code"}
+{"query": "Write a recursive JSON serializer/deserializer from scratch in Python.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement a simple neural network backprop pass for XOR using NumPy.", "label": "big", "category": "multi_step_code"}
+{"query": "Write a Python function that parses and evaluates mathematical expressions.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement the Fisher-Yates shuffle algorithm and prove it is uniformly random.", "label": "big", "category": "multi_step_code"}
+{"query": "Write a simple web framework routing engine in Python. Handle path parameters.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement a two-pass assembler in Python for a toy instruction set.", "label": "big", "category": "multi_step_code"}
+{"query": "Write a Python class for polynomial arithmetic over finite fields.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement a thread pool executor from scratch in Python using threading.", "label": "big", "category": "multi_step_code"}
+{"query": "Write a lazy evaluation library in Python using generators and explain memoization.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement the Earley parsing algorithm in Python for context-free grammars.", "label": "big", "category": "multi_step_code"}
+{"query": "Write a Python implementation of Lamport logical clocks for distributed events.", "label": "big", "category": "multi_step_code"}
+{"query": "Implement a memory-efficient sparse matrix in Python using CSR format.", "label": "big", "category": "multi_step_code"}
+{"query": "How should I plan a zero-downtime migration from monolith to microservices?", "label": "big", "category": "real_world_planning"}
+{"query": "Plan a data governance strategy for a company handling EU customer data (GDPR).", "label": "big", "category": "real_world_planning"}
+{"query": "How do I build a scalable ML platform from scratch for a 30-person data team?", "label": "big", "category": "real_world_planning"}
+{"query": "What's the rollout strategy for a breaking API change with 500 external clients?", "label": "big", "category": "real_world_planning"}
+{"query": "How should I design an on-call rotation and incident response process for a 15-person team?", "label": "big", "category": "real_world_planning"}
+{"query": "Plan a technical roadmap for modernizing a legacy PHP application to Python.", "label": "big", "category": "real_world_planning"}
+{"query": "How should I evaluate and select a data warehouse for a fast-growing startup?", "label": "big", "category": "real_world_planning"}
+{"query": "What steps do I take to achieve SOC 2 Type II certification for a SaaS company?", "label": "big", "category": "real_world_planning"}
+{"query": "Plan a database migration from a single RDS instance to Aurora multi-region.", "label": "big", "category": "real_world_planning"}
+{"query": "How should I structure engineering org around stream-aligned teams at 100 engineers?", "label": "big", "category": "real_world_planning"}
+{"query": "What is the strategy for cutting cloud infrastructure costs by 30% without reducing reliability?", "label": "big", "category": "real_world_planning"}
+{"query": "How should I build an internal developer platform that teams actually adopt?", "label": "big", "category": "real_world_planning"}
+{"query": "Plan the technical strategy for launching a product in three new international markets.", "label": "big", "category": "real_world_planning"}
+{"query": "How should I architect the observability stack for a new distributed system from day 1?", "label": "big", "category": "real_world_planning"}
+{"query": "What's the plan for implementing zero-trust networking across a hybrid cloud environment?", "label": "big", "category": "real_world_planning"}
+{"query": "How should I set up GitOps workflows for a team deploying to Kubernetes?", "label": "big", "category": "real_world_planning"}
+{"query": "Plan an API monetization strategy for a developer-focused product.", "label": "big", "category": "real_world_planning"}
+{"query": "How do I build a data mesh architecture across 5 independent engineering teams?", "label": "big", "category": "real_world_planning"}
+{"query": "What is the most effective way to run a remote engineering team across 3 time zones?", "label": "big", "category": "real_world_planning"}
+{"query": "How should I design the evaluation framework for a production LLM-powered feature?", "label": "big", "category": "real_world_planning"}
+{"query": "Plan the migration from a custom auth system to Auth0 for a 500K user app.", "label": "big", "category": "real_world_planning"}
+{"query": "How should I prepare my engineering team for a potential acquisition due diligence?", "label": "big", "category": "real_world_planning"}
+{"query": "What is the strategy for building an ML model monitoring and retraining pipeline?", "label": "big", "category": "real_world_planning"}
+{"query": "How do I design a chaos engineering program for a critical financial system?", "label": "big", "category": "real_world_planning"}
+{"query": "Plan a 12-month roadmap for paying down technical debt in a 5-year-old codebase.", "label": "big", "category": "real_world_planning"}
+{"query": "Explain how MVCC works in CockroachDB and how it handles serializable isolation.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does gradient checkpointing reduce GPU memory usage during training?", "label": "big", "category": "domain_specific_deep"}
+{"query": "Explain how the Linux scheduler handles real-time tasks versus normal tasks.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does the transformer decoder's causal masking enable autoregressive generation?", "label": "big", "category": "domain_specific_deep"}
+{"query": "Explain the mathematics of word2vec's skip-gram objective and negative sampling.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does Python's asyncio event loop handle coroutine scheduling under the hood?", "label": "big", "category": "domain_specific_deep"}
+{"query": "Explain how TiKV implements distributed transactions using the Percolator protocol.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does kernel SVM use the kernel trick to classify non-linearly separable data?", "label": "big", "category": "domain_specific_deep"}
+{"query": "Explain the internals of CPython's reference counting and cyclic garbage collector.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does FlashAttention achieve O(n) memory complexity for self-attention?", "label": "big", "category": "domain_specific_deep"}
+{"query": "Explain how Postgres uses MVCC to allow readers and writers to not block each other.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does the Adam optimizer's bias correction work mathematically in early training steps?", "label": "big", "category": "domain_specific_deep"}
+{"query": "Explain the internals of Go's goroutine scheduler: M, P, and G model.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does RLHF fine-tuning change a language model's behavior? Walk through PPO.", "label": "big", "category": "domain_specific_deep"}
+{"query": "Explain how sparse attention mechanisms reduce the quadratic cost of self-attention.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does Kafka's log compaction guarantee exactly-once delivery for changelog topics?", "label": "big", "category": "domain_specific_deep"}
+{"query": "Explain how Google Spanner achieves external consistency using TrueTime.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does LLVM's SSA form enable constant folding and dead code elimination?", "label": "big", "category": "domain_specific_deep"}
+{"query": "Explain the InfoNCE loss used in contrastive learning and why it's effective.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does DuckDB's vectorized execution engine outperform row-at-a-time engines?", "label": "big", "category": "domain_specific_deep"}
+{"query": "Explain how Rust's async executor (tokio) schedules futures on a thread pool.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does CockroachDB handle clock skew in its distributed transaction protocol?", "label": "big", "category": "domain_specific_deep"}
+{"query": "Explain the mathematics of variational inference and the ELBO objective.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does eBPF's verifier ensure kernel safety without a full type system?", "label": "big", "category": "domain_specific_deep"}
+{"query": "Explain how LSM-tree compaction strategies (tiered vs. leveled) affect read/write amplification.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does PyTorch's autograd engine compute gradients through dynamic computation graphs?", "label": "big", "category": "domain_specific_deep"}
+{"query": "Explain how Chord DHT achieves O(log n) lookup using finger tables.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does Jax's XLA compiler optimize neural network computations?", "label": "big", "category": "domain_specific_deep"}
+{"query": "Explain how HuggingFace's Accelerate library abstracts multi-GPU and TPU training.", "label": "big", "category": "domain_specific_deep"}
+{"query": "How does Spark's Catalyst optimizer rewrite query plans for performance?", "label": "big", "category": "domain_specific_deep"}
+{"query": "Design a rate limiter that: supports per-user and per-IP limits, persists across restarts, and runs in under 5ms.", "label": "big", "category": "multi_constraint"}
+{"query": "Write a training pipeline that: handles missing labels, uses curriculum learning, checkpoints every N steps, and logs to W&B.", "label": "big", "category": "multi_constraint"}
+{"query": "Design a file upload API that: limits size to 50MB, validates MIME types, stores on S3, and generates thumbnails async.", "label": "big", "category": "multi_constraint"}
+{"query": "Build a scheduler that: runs jobs at cron intervals, retries on failure with backoff, deduplicates concurrent runs, and logs history.", "label": "big", "category": "multi_constraint"}
+{"query": "Design an audit logging system that: captures all mutations, is tamper-evident, searchable, and retains for 7 years.", "label": "big", "category": "multi_constraint"}
+{"query": "Write a cache layer that: serves stale while revalidating, handles thundering herd, TTLs per-key, and supports cache tags.", "label": "big", "category": "multi_constraint"}
+{"query": "Design an auth system that: supports OAuth2, API keys, and session tokens, rate-limits login attempts, and audits all access.", "label": "big", "category": "multi_constraint"}
+{"query": "Build an email system that: queues sends, retries bounces, unsubscribes globally, and renders per-user personalized templates.", "label": "big", "category": "multi_constraint"}
+{"query": "Design a config management service that: encrypts secrets, supports environment-specific overrides, is auditable, and hot-reloads.", "label": "big", "category": "multi_constraint"}
+{"query": "Write a search service that: supports full-text, filters, pagination, ranking, and autocomplete within 50ms p99.", "label": "big", "category": "multi_constraint"}
+{"query": "Design a GDPR compliance system that: anonymizes on request, tracks consent, exports data, and audits all access.", "label": "big", "category": "multi_constraint"}
+{"query": "Build a webhook system that: retries with exponential backoff, verifies payload signatures, tracks delivery, and prevents replay.", "label": "big", "category": "multi_constraint"}
+{"query": "Design an ML feature store that: serves low-latency online features, supports batch, handles schema evolution, and is versioned.", "label": "big", "category": "multi_constraint"}
+{"query": "Write a test framework that: runs tests in parallel, isolates state, supports fixtures, mocks externals, and generates reports.", "label": "big", "category": "multi_constraint"}
+{"query": "Build a multi-tenant billing system that: tracks usage in real time, supports multiple plans, handles upgrades/downgrades, and invoices automatically.", "label": "big", "category": "multi_constraint"}
+{"query": "Design a distributed tracing system that: samples intelligently, propagates context across services, stores for 30 days, and alerts on anomalies.", "label": "big", "category": "multi_constraint"}
+{"query": "Write a data pipeline that: ingests from Kafka, transforms with Spark, validates schema, handles late data, and loads to Snowflake.", "label": "big", "category": "multi_constraint"}
+{"query": "Build a notification system that: sends via email/SMS/push, respects user preferences, deduplicates, and tracks open rates.", "label": "big", "category": "multi_constraint"}
+{"query": "Design a secrets management system that: rotates credentials automatically, supports multiple backends, audits access, and alerts on leaks.", "label": "big", "category": "multi_constraint"}
+{"query": "Write an API gateway that: handles auth, rate limiting, request transformation, circuit breaking, and observability for 100 microservices.", "label": "big", "category": "multi_constraint"}
+{"query": "What is the national animal of Canada?", "label": "small", "category": "trivia"}
+{"query": "How many strings does a standard violin have?", "label": "small", "category": "trivia"}
+{"query": "What is the most visited museum in the world?", "label": "small", "category": "trivia"}
+{"query": "Which planet is known as the Red Planet?", "label": "small", "category": "trivia"}
+{"query": "What sport is played in the Super Bowl?", "label": "small", "category": "trivia"}
+{"query": "How many legs does an octopus have?", "label": "small", "category": "trivia"}
+{"query": "What is the hardest mineral?", "label": "small", "category": "trivia"}
+{"query": "What ocean is Hawaii in?", "label": "small", "category": "trivia"}
+{"query": "Who invented the telephone?", "label": "small", "category": "trivia"}
+{"query": "What is the most widely spoken language in the world?", "label": "small", "category": "trivia"}
+{"query": "How many teeth does an adult human have?", "label": "small", "category": "trivia"}
+{"query": "What country is the Colosseum in?", "label": "small", "category": "trivia"}
+{"query": "What is the rarest element in the universe?", "label": "small", "category": "trivia"}
+{"query": "How long does it take the Earth to orbit the Sun?", "label": "small", "category": "trivia"}
+{"query": "What is the tallest building in the world?", "label": "small", "category": "trivia"}
+{"query": "How many bones are in a human hand?", "label": "small", "category": "trivia"}
+{"query": "What is the deepest point in the ocean?", "label": "small", "category": "trivia"}
+{"query": "What is the wingspan of a bald eagle?", "label": "small", "category": "trivia"}
+{"query": "How many days is a typical human pregnancy?", "label": "small", "category": "trivia"}
+{"query": "What country invented sushi?", "label": "small", "category": "trivia"}
+{"query": "What is the national flower of Japan?", "label": "small", "category": "trivia"}
+{"query": "How long is the Amazon River?", "label": "small", "category": "trivia"}
+{"query": "What is the smallest planet in our solar system?", "label": "small", "category": "trivia"}
+{"query": "Who is the author of the Harry Potter series?", "label": "small", "category": "trivia"}
+{"query": "What instrument does a pianist play?", "label": "small", "category": "trivia"}
+{"query": "What is the boiling point of helium?", "label": "small", "category": "trivia"}
+{"query": "How many Grand Slam tennis tournaments are there?", "label": "small", "category": "trivia"}
+{"query": "What is the largest internal organ in the human body?", "label": "small", "category": "trivia"}
+{"query": "What country has the most Nobel Prize winners?", "label": "small", "category": "trivia"}
+{"query": "What is the capital city of New Zealand?", "label": "small", "category": "trivia"}
+{"query": "Convert 3 kilometers to miles", "label": "small", "category": "conversions"}
+{"query": "How many tablespoons are in 2 cups?", "label": "small", "category": "conversions"}
+{"query": "What is 1 terabyte in gigabytes?", "label": "small", "category": "conversions"}
+{"query": "Convert 120 km/h to mph", "label": "small", "category": "conversions"}
+{"query": "How many milliliters in a fluid ounce?", "label": "small", "category": "conversions"}
+{"query": "Convert 6 feet 2 inches to meters", "label": "small", "category": "conversions"}
+{"query": "What is 1 parsec in light-years?", "label": "small", "category": "conversions"}
+{"query": "How many teaspoons in 2 tablespoons?", "label": "small", "category": "conversions"}
+{"query": "Convert 4 hours 15 minutes to seconds", "label": "small", "category": "conversions"}
+{"query": "How many quarts are in 3 gallons?", "label": "small", "category": "conversions"}
+{"query": "What is 750 grams in pounds?", "label": "small", "category": "conversions"}
+{"query": "Convert 2 acres to square feet", "label": "small", "category": "conversions"}
+{"query": "How many kilobytes are in a megabyte?", "label": "small", "category": "conversions"}
+{"query": "What is 100 pounds in kilograms?", "label": "small", "category": "conversions"}
+{"query": "Convert 45 minutes to decimal hours", "label": "small", "category": "conversions"}
+{"query": "How many cups are in 2 liters?", "label": "small", "category": "conversions"}
+{"query": "What is 1 statute mile in nautical miles?", "label": "small", "category": "conversions"}
+{"query": "Convert 350 milliliters to cups", "label": "small", "category": "conversions"}
+{"query": "How many micrograms in a milligram?", "label": "small", "category": "conversions"}
+{"query": "What is 2 horsepower in kilowatts?", "label": "small", "category": "conversions"}
+{"query": "Compare Python asyncio and threading. When does each hurt performance?", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between Docker volumes and bind mounts, and when should I use each?", "label": "big", "category": "compound_questions"}
+{"query": "Compare Redis Sentinel and Redis Cluster. How do they achieve high availability differently?", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between RSA and ECDSA for digital signatures, and which should I use?", "label": "big", "category": "compound_questions"}
+{"query": "Compare WebSockets, Server-Sent Events, and long polling. When is each appropriate?", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between OAuth 2.0 and OpenID Connect, and when do you need both?", "label": "big", "category": "compound_questions"}
+{"query": "Compare Helm and Kustomize for managing Kubernetes manifests.", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between OLAP and OLTP workloads, and what databases serve each?", "label": "big", "category": "compound_questions"}
+{"query": "Compare supervised fine-tuning, RLHF, and DPO for aligning language models.", "label": "big", "category": "compound_questions"}
+{"query": "What are the architectural differences between serverless functions and containers, and which scales better?", "label": "big", "category": "compound_questions"}
+{"query": "Compare eventual consistency in DynamoDB versus CockroachDB's serializable isolation.", "label": "big", "category": "compound_questions"}
+{"query": "What are the trade-offs between embedding-based retrieval and BM25 for search, and can you combine them?", "label": "big", "category": "compound_questions"}
+{"query": "Compare actor-based concurrency (Erlang/Akka) to goroutines in Go. When does each shine?", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between zero-shot, one-shot, and few-shot prompting in LLMs?", "label": "big", "category": "compound_questions"}
+{"query": "Compare symmetric and asymmetric encryption. When is each appropriate for a web application?", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between blue-green, canary, and rolling deployments?", "label": "big", "category": "compound_questions"}
+{"query": "Compare Apache Iceberg, Delta Lake, and Apache Hudi as open table formats.", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between structured, semi-structured, and unstructured data in a data lake?", "label": "big", "category": "compound_questions"}
+{"query": "Compare horizontal pod autoscaling and KEDA for event-driven scaling in Kubernetes.", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between memoization, caching, and lazy evaluation, and when does each help?", "label": "big", "category": "compound_questions"}
+{"query": "Compare pull-based and push-based metrics collection. When does each approach fail?", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between open-loop and closed-loop control in ML model retraining?", "label": "big", "category": "compound_questions"}
+{"query": "Compare OpenTelemetry and proprietary APM vendors for observability.", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between batch inference and real-time inference for ML models?", "label": "big", "category": "compound_questions"}
+{"query": "Compare protocol buffers, Avro, and JSON for event serialization in a Kafka pipeline.", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between a data warehouse, data lake, and data lakehouse?", "label": "big", "category": "compound_questions"}
+{"query": "Compare synchronous and asynchronous REST APIs. What are the UX trade-offs?", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between a feature flag, experiment, and A/B test?", "label": "big", "category": "compound_questions"}
+{"query": "Compare read-through and write-through caching. When does each fit best?", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between semantic versioning and calendar versioning for public APIs?", "label": "big", "category": "compound_questions"}
+{"query": "Compare stack-based and register-based virtual machine architectures.", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between scatter-gather and fan-out-fan-in microservice patterns?", "label": "big", "category": "compound_questions"}
+{"query": "Compare active-active and active-passive multi-region setups for databases.", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between row-level and column-level security in databases?", "label": "big", "category": "compound_questions"}
+{"query": "Compare direct SSD access and NVMe over Fabrics for distributed storage performance.", "label": "big", "category": "compound_questions"}
+{"query": "What are the trade-offs between type narrowing and type assertions in TypeScript?", "label": "big", "category": "compound_questions"}
+{"query": "Compare circuit breaker and retry patterns for handling downstream service failures.", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between a service mesh and an API gateway?", "label": "big", "category": "compound_questions"}
+{"query": "Compare gradient boosting (XGBoost) and random forests for tabular classification.", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between sparse and dense vector representations in embedding search?", "label": "big", "category": "compound_questions"}
+{"query": "Compare Bayesian and frequentist approaches to A/B test analysis.", "label": "big", "category": "compound_questions"}
+{"query": "What are the key differences between SOAP and REST web services?", "label": "big", "category": "compound_questions"}
+{"query": "Compare materialized views and indexed tables for query optimization.", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between synchronous sagas and asynchronous choreography in microservices?", "label": "big", "category": "compound_questions"}
+{"query": "Compare eager and lazy loading in ORMs. When does each cause performance problems?", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between ACID transactions and the saga pattern for distributed data?", "label": "big", "category": "compound_questions"}
+{"query": "Compare dependency injection and service locator pattern. What are the testability trade-offs?", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between a proxy and a reverse proxy?", "label": "big", "category": "compound_questions"}
+{"query": "Compare multi-armed bandit and A/B testing for content optimization.", "label": "big", "category": "compound_questions"}
+{"query": "What are the differences between warm, hot, and cold standby disaster recovery strategies?", "label": "big", "category": "compound_questions"}
+{"query": "What is the capital of Morocco?", "label": "small", "category": "factual"}
+{"query": "Who wrote 'War and Peace'?", "label": "small", "category": "factual"}
+{"query": "What is the symbol for uranium on the periodic table?", "label": "small", "category": "factual"}
+{"query": "What year did World War I end?", "label": "small", "category": "factual"}
+{"query": "What language is spoken in Austria?", "label": "small", "category": "factual"}
+{"query": "Who was the 16th president of the United States?", "label": "small", "category": "factual"}
+{"query": "What is the capital of the Philippines?", "label": "small", "category": "factual"}
+{"query": "What is the chemical symbol for copper?", "label": "small", "category": "factual"}
+{"query": "Who founded Google?", "label": "small", "category": "factual"}
+{"query": "What is the currency of South Korea?", "label": "small", "category": "factual"}
+{"query": "What does IDE stand for in software?", "label": "small", "category": "factual"}
+{"query": "What year was the first email sent?", "label": "small", "category": "factual"}
+{"query": "What is the tallest waterfall in the world?", "label": "small", "category": "factual"}
+{"query": "Who composed the Four Seasons?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Turkey?", "label": "small", "category": "factual"}
+{"query": "What does WYSIWYG stand for?", "label": "small", "category": "factual"}
+{"query": "Who wrote 'The Divine Comedy'?", "label": "small", "category": "factual"}
+{"query": "What is the smallest planet in the solar system?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Vietnam?", "label": "small", "category": "factual"}
+{"query": "Who is the founder of SpaceX?", "label": "small", "category": "factual"}
+{"query": "What does URL stand for?", "label": "small", "category": "factual"}
+{"query": "What year was the first computer virus created?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Colombia?", "label": "small", "category": "factual"}
+{"query": "What language is spoken in the Netherlands?", "label": "small", "category": "factual"}
+{"query": "Who painted Starry Night?", "label": "small", "category": "factual"}
+{"query": "What does JSON stand for?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Kenya?", "label": "small", "category": "factual"}
+{"query": "What year was the first text message sent?", "label": "small", "category": "factual"}
+{"query": "Who invented WiFi?", "label": "small", "category": "factual"}
+{"query": "What does CSS stand for?", "label": "small", "category": "factual"}
+{"query": "What is the currency of India?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Iran?", "label": "small", "category": "factual"}
+{"query": "What does OOP stand for?", "label": "small", "category": "factual"}
+{"query": "Who wrote 'Don Quixote'?", "label": "small", "category": "factual"}
+{"query": "What is the largest organ in the human body?", "label": "small", "category": "factual"}
+{"query": "What country is Machu Picchu in?", "label": "small", "category": "factual"}
+{"query": "What does DNS stand for?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Ukraine?", "label": "small", "category": "factual"}
+{"query": "Who invented the World Wide Web?", "label": "small", "category": "factual"}
+{"query": "What is the chemical symbol for lead?", "label": "small", "category": "factual"}
+{"query": "What does GIF stand for?", "label": "small", "category": "factual"}
+{"query": "What year was Twitter founded?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Saudi Arabia?", "label": "small", "category": "factual"}
+{"query": "Who is credited with inventing the automobile?", "label": "small", "category": "factual"}
+{"query": "What does HTML stand for?", "label": "small", "category": "factual"}
+{"query": "What is the currency of Russia?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Poland?", "label": "small", "category": "factual"}
+{"query": "What does MIME stand for in email?", "label": "small", "category": "factual"}
+{"query": "Who designed the Eiffel Tower?", "label": "small", "category": "factual"}
+{"query": "What is the chemical formula for carbon dioxide?", "label": "small", "category": "factual"}
+{"query": "What does FIFO stand for?", "label": "small", "category": "factual"}
+{"query": "What year was Wikipedia founded?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Portugal?", "label": "small", "category": "factual"}
+{"query": "Who founded Amazon?", "label": "small", "category": "factual"}
+{"query": "What does RAM stand for?", "label": "small", "category": "factual"}
+{"query": "What is the national bird of India?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Hungary?", "label": "small", "category": "factual"}
+{"query": "What does CPU stand for?", "label": "small", "category": "factual"}
+{"query": "Who wrote 'Moby-Dick'?", "label": "small", "category": "factual"}
+{"query": "What is the tallest mountain in Africa?", "label": "small", "category": "factual"}
+{"query": "What does IoT stand for?", "label": "small", "category": "factual"}
+{"query": "What year was Kubernetes first released?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Greece?", "label": "small", "category": "factual"}
+{"query": "What language is spoken in Austria?", "label": "small", "category": "factual"}
+{"query": "Who invented the radio?", "label": "small", "category": "factual"}
+{"query": "What does VPN stand for?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Bangladesh?", "label": "small", "category": "factual"}
+{"query": "What is the currency of Australia?", "label": "small", "category": "factual"}
+{"query": "What does SOLID stand for in software engineering?", "label": "small", "category": "factual"}
+{"query": "Who is the author of 'Clean Code'?", "label": "small", "category": "factual"}
+{"query": "What is the largest lake in Africa?", "label": "small", "category": "factual"}
+{"query": "What is 23 times 4?", "label": "small", "category": "math_simple"}
+{"query": "Convert 8 ounces to grams", "label": "small", "category": "math_simple"}
+{"query": "What is 75% of 200?", "label": "small", "category": "math_simple"}
+{"query": "What is the cube root of 125?", "label": "small", "category": "math_simple"}
+{"query": "How many hours in 3 days?", "label": "small", "category": "math_simple"}
+{"query": "What is 10 to the power of 4?", "label": "small", "category": "math_simple"}
+{"query": "Convert 0 Kelvin to Celsius", "label": "small", "category": "math_simple"}
+{"query": "What is 1024 divided by 32?", "label": "small", "category": "math_simple"}
+{"query": "How many pounds in a ton?", "label": "small", "category": "math_simple"}
+{"query": "What is 13 squared?", "label": "small", "category": "math_simple"}
+{"query": "How many months in 4 years?", "label": "small", "category": "math_simple"}
+{"query": "What is 800 divided by 25?", "label": "small", "category": "math_simple"}
+{"query": "Convert 10 yards to feet", "label": "small", "category": "math_simple"}
+{"query": "What is 1/3 as a decimal?", "label": "small", "category": "math_simple"}
+{"query": "How many millimeters in a centimeter?", "label": "small", "category": "math_simple"}
+{"query": "What is 22 times 5?", "label": "small", "category": "math_simple"}
+{"query": "What is 144 plus 256?", "label": "small", "category": "math_simple"}
+{"query": "Convert 2 miles to meters", "label": "small", "category": "math_simple"}
+{"query": "What is 50% of 88?", "label": "small", "category": "math_simple"}
+{"query": "How many nanoseconds in a millisecond?", "label": "small", "category": "math_simple"}
+{"query": "What is 6 factorial?", "label": "small", "category": "math_simple"}
+{"query": "What is 3.5 times 10?", "label": "small", "category": "math_simple"}
+{"query": "How many seconds in a week?", "label": "small", "category": "math_simple"}
+{"query": "What is the square root of 1024?", "label": "small", "category": "math_simple"}
+{"query": "Convert 5 gallons to liters", "label": "small", "category": "math_simple"}
+{"query": "Explain why naive Bayes performs well despite its independence assumption being violated.", "label": "big", "category": "analysis"}
+{"query": "Analyze the trade-offs between strong consistency and performance in distributed databases.", "label": "big", "category": "analysis"}
+{"query": "Explain how garbage collection pauses affect latency-sensitive applications.", "label": "big", "category": "analysis"}
+{"query": "Analyze the technical and organizational challenges of adopting trunk-based development.", "label": "big", "category": "analysis"}
+{"query": "Explain how SSL pinning works and why it improves mobile app security.", "label": "big", "category": "analysis"}
+{"query": "Analyze the effects of cold starts on serverless function latency.", "label": "big", "category": "analysis"}
+{"query": "Explain why hash collisions are unavoidable and how hash maps handle them.", "label": "big", "category": "analysis"}
+{"query": "Analyze the trade-offs of using git history as your audit log.", "label": "big", "category": "analysis"}
+{"query": "Explain how database connection pooling prevents connection exhaustion.", "label": "big", "category": "analysis"}
+{"query": "Analyze why the Agile manifesto is often misunderstood in practice.", "label": "big", "category": "analysis"}
+{"query": "Explain how the transformer positional encoding generalizes to unseen sequence lengths.", "label": "big", "category": "analysis"}
+{"query": "Analyze the implications of choosing a vendor-specific observability tool versus OpenTelemetry.", "label": "big", "category": "analysis"}
+{"query": "Explain how P99 latency differs from average latency and why it matters for SLAs.", "label": "big", "category": "analysis"}
+{"query": "Analyze the security risks of embedding secrets in Docker images.", "label": "big", "category": "analysis"}
+{"query": "Explain how copy-on-write semantics reduce memory usage in operating systems.", "label": "big", "category": "analysis"}
+{"query": "Analyze the engineering trade-offs of choosing Python versus Go for a latency-sensitive service.", "label": "big", "category": "analysis"}
+{"query": "Explain why HTTPS alone does not protect against all man-in-the-middle attacks.", "label": "big", "category": "analysis"}
+{"query": "Analyze the computational trade-offs of different attention mechanisms in transformers.", "label": "big", "category": "analysis"}
+{"query": "Explain how backpressure mechanisms prevent cascading failures in streaming systems.", "label": "big", "category": "analysis"}
+{"query": "Analyze the impact of network latency on distributed transaction throughput.", "label": "big", "category": "analysis"}
+{"query": "Explain why database indices slow down write operations.", "label": "big", "category": "analysis"}
+{"query": "Analyze the trade-offs of storing configuration in environment variables versus a config service.", "label": "big", "category": "analysis"}
+{"query": "Explain how the kernel's buddy allocator reduces memory fragmentation.", "label": "big", "category": "analysis"}
+{"query": "Analyze the impact of team size on code review effectiveness.", "label": "big", "category": "analysis"}
+{"query": "Explain how probabilistic data structures trade accuracy for space efficiency.", "label": "big", "category": "analysis"}
+{"query": "Analyze the engineering risks of adopting a new programming language in production.", "label": "big", "category": "analysis"}
+{"query": "Explain why consistent hashing reduces key rebalancing when nodes join or leave.", "label": "big", "category": "analysis"}
+{"query": "Analyze the observability trade-offs between logging, metrics, and traces.", "label": "big", "category": "analysis"}
+{"query": "Explain how circuit breakers prevent cascading failures in microservice architectures.", "label": "big", "category": "analysis"}
+{"query": "Analyze the human factors that contribute to production incidents beyond technical causes.", "label": "big", "category": "analysis"}
+{"query": "Is C++ faster than Python?", "label": "small", "category": "yes_no"}
+{"query": "Is the sun bigger than Earth?", "label": "small", "category": "yes_no"}
+{"query": "Does Java garbage collect automatically?", "label": "small", "category": "yes_no"}
+{"query": "Is REST stateless?", "label": "small", "category": "yes_no"}
+{"query": "Does PostgreSQL support JSON?", "label": "small", "category": "yes_no"}
+{"query": "Is Kubernetes written in Go?", "label": "small", "category": "yes_no"}
+{"query": "Is Apache Kafka a message broker?", "label": "small", "category": "yes_no"}
+{"query": "Does Python support lambda functions?", "label": "small", "category": "yes_no"}
+{"query": "Is TCP reliable?", "label": "small", "category": "yes_no"}
+{"query": "Is binary search O(log n)?", "label": "small", "category": "yes_no"}
+{"query": "Does Linux use a monolithic kernel?", "label": "small", "category": "yes_no"}
+{"query": "Is SHA-256 a symmetric encryption algorithm?", "label": "small", "category": "yes_no"}
+{"query": "Does Rust have a garbage collector?", "label": "small", "category": "yes_no"}
+{"query": "Is a list in Python mutable?", "label": "small", "category": "yes_no"}
+{"query": "Does Git track file permissions?", "label": "small", "category": "yes_no"}
+{"query": "Is JSON a binary format?", "label": "small", "category": "yes_no"}
+{"query": "Is TypeScript compiled to JavaScript?", "label": "small", "category": "yes_no"}
+{"query": "Does React use a virtual DOM?", "label": "small", "category": "yes_no"}
+{"query": "Is an integer 4 bytes in most 64-bit systems?", "label": "small", "category": "yes_no"}
+{"query": "Is quicksort in-place?", "label": "small", "category": "yes_no"}
+{"query": "What is a promise in JavaScript?", "label": "small", "category": "definitions"}
+{"query": "Define observability in software engineering", "label": "small", "category": "definitions"}
+{"query": "What is a monorepo?", "label": "small", "category": "definitions"}
+{"query": "Define zero-downtime deployment", "label": "small", "category": "definitions"}
+{"query": "What is a webhook?", "label": "small", "category": "definitions"}
+{"query": "Define chaos engineering", "label": "small", "category": "definitions"}
+{"query": "What is a p99 latency?", "label": "small", "category": "definitions"}
+{"query": "Define service mesh", "label": "small", "category": "definitions"}
+{"query": "What is FinOps?", "label": "small", "category": "definitions"}
+{"query": "Define federated learning", "label": "small", "category": "definitions"}
+{"query": "What is a vector database?", "label": "small", "category": "definitions"}
+{"query": "Define prompt engineering", "label": "small", "category": "definitions"}
+{"query": "What is model drift?", "label": "small", "category": "definitions"}
+{"query": "Define data lineage", "label": "small", "category": "definitions"}
+{"query": "What is a hot path in software?", "label": "small", "category": "definitions"}
+{"query": "Define trunk-based development", "label": "small", "category": "definitions"}
+{"query": "What is a fan-out pattern?", "label": "small", "category": "definitions"}
+{"query": "Define the strangler fig pattern", "label": "small", "category": "definitions"}
+{"query": "What is MTTR?", "label": "small", "category": "definitions"}
+{"query": "Define infrastructure as code", "label": "small", "category": "definitions"}
+{"query": "Why am I getting 'maximum recursion depth exceeded' in Python?", "label": "small", "category": "debug_simple"}
+{"query": "What does 'ERR_CONNECTION_REFUSED' mean in a browser?", "label": "small", "category": "debug_simple"}
+{"query": "Why is my Python dictionary throwing a KeyError?", "label": "small", "category": "debug_simple"}
+{"query": "What does 'git merge conflict' mean?", "label": "small", "category": "debug_simple"}
+{"query": "Why is my database query slow?", "label": "small", "category": "debug_simple"}
+{"query": "What causes a React 'key' warning?", "label": "small", "category": "debug_simple"}
+{"query": "Why does my pip install fail with SSL error?", "label": "small", "category": "debug_simple"}
+{"query": "What causes 'uncaught promise rejection' in Node.js?", "label": "small", "category": "debug_simple"}
+{"query": "Why is Kubernetes pod stuck in 'Pending' state?", "label": "small", "category": "debug_simple"}
+{"query": "What does 'cannot read properties of undefined' mean in JavaScript?", "label": "small", "category": "debug_simple"}
+{"query": "Why is my Python virtual environment not activating?", "label": "small", "category": "debug_simple"}
+{"query": "What causes a 'broken pipe' error in Linux?", "label": "small", "category": "debug_simple"}
+{"query": "Why is Docker build failing with 'no space left on device'?", "label": "small", "category": "debug_simple"}
+{"query": "What does 'schema mismatch' mean in Avro?", "label": "small", "category": "debug_simple"}
+{"query": "Why is my Flask app returning 405 Method Not Allowed?", "label": "small", "category": "debug_simple"}
+{"query": "What causes a 'zombie process' in Linux?", "label": "small", "category": "debug_simple"}
+{"query": "Why is my CSS flexbox not centering the element?", "label": "small", "category": "debug_simple"}
+{"query": "What does 'address already in use' mean when starting a server?", "label": "small", "category": "debug_simple"}
+{"query": "Why is my JavaScript async function not awaiting?", "label": "small", "category": "debug_simple"}
+{"query": "What causes a 'heap dump' in Java?", "label": "small", "category": "debug_simple"}
+{"query": "What's the short version of that?", "label": "small", "category": "conversational"}
+{"query": "Can you rephrase that in simpler terms?", "label": "small", "category": "conversational"}
+{"query": "What was the first point you made?", "label": "small", "category": "conversational"}
+{"query": "OK, and how does that apply to my situation?", "label": "small", "category": "conversational"}
+{"query": "Is there a simpler way to think about this?", "label": "small", "category": "conversational"}
+{"query": "Can you show me a concrete example?", "label": "small", "category": "conversational"}
+{"query": "What did you mean by that last sentence?", "label": "small", "category": "conversational"}
+{"query": "Can you explain that without jargon?", "label": "small", "category": "conversational"}
+{"query": "OK what's the bottom line?", "label": "small", "category": "conversational"}
+{"query": "I'm confused, can you start over?", "label": "small", "category": "conversational"}
+{"query": "Can you break that into numbered steps?", "label": "small", "category": "conversational"}
+{"query": "What's the most important thing to take away?", "label": "small", "category": "conversational"}
+{"query": "Can you give me just the key points?", "label": "small", "category": "conversational"}
+{"query": "What does that mean for a beginner?", "label": "small", "category": "conversational"}
+{"query": "Can you give an analogy for that?", "label": "small", "category": "conversational"}
+{"query": "Is that the standard approach or an alternative?", "label": "small", "category": "conversational"}
+{"query": "How does that compare to what you said earlier?", "label": "small", "category": "conversational"}
+{"query": "Could you expand on the trade-offs?", "label": "small", "category": "conversational"}
+{"query": "What should I do first?", "label": "small", "category": "conversational"}
+{"query": "Can you summarize everything so far?", "label": "small", "category": "conversational"}
+{"query": "Give me a fun name for a code monkey mascot", "label": "small", "category": "short_creative"}
+{"query": "Write a haiku about serverless architecture", "label": "small", "category": "short_creative"}
+{"query": "Make up a pun about load balancing", "label": "small", "category": "short_creative"}
+{"query": "Tell me a riddle about a cache miss", "label": "small", "category": "short_creative"}
+{"query": "Give me a one-liner about software deadlines", "label": "small", "category": "short_creative"}
+{"query": "Write a haiku about latency", "label": "small", "category": "short_creative"}
+{"query": "Give me a fun tagline for a database product", "label": "small", "category": "short_creative"}
+{"query": "Make up a pun about Git branches", "label": "small", "category": "short_creative"}
+{"query": "Tell me a joke about stack overflow (the error)", "label": "small", "category": "short_creative"}
+{"query": "Give me a creative team name for a platform engineering team", "label": "small", "category": "short_creative"}
+{"query": "Write a limerick about DNS propagation", "label": "small", "category": "short_creative"}
+{"query": "Give me a motivational quote about failing tests", "label": "small", "category": "short_creative"}
+{"query": "Make up a funny error message for a 418 I'm a Teapot response", "label": "small", "category": "short_creative"}
+{"query": "Tell me a programming fun fact I probably don't know", "label": "small", "category": "short_creative"}
+{"query": "Write a two-line poem about microservices", "label": "small", "category": "short_creative"}
+{"query": "Give me a pun about Kubernetes pods", "label": "small", "category": "short_creative"}
+{"query": "Tell me a joke about frontend versus backend developers", "label": "small", "category": "short_creative"}
+{"query": "Give me a fun tagline for an open source project", "label": "small", "category": "short_creative"}
+{"query": "Write a haiku about an infinite loop", "label": "small", "category": "short_creative"}
+{"query": "Make up a creative name for a logging library", "label": "small", "category": "short_creative"}
+{"query": "Give me a riddle about a stack data structure", "label": "small", "category": "short_creative"}
+{"query": "Tell me a fun fact about the history of the internet", "label": "small", "category": "short_creative"}
+{"query": "Give me a motivational quote about learning from bugs", "label": "small", "category": "short_creative"}
+{"query": "Make up a silly acronym for 'DEBUG'", "label": "small", "category": "short_creative"}
+{"query": "G'day!", "label": "small", "category": "greetings"}
+{"query": "Hi again!", "label": "small", "category": "greetings"}
+{"query": "You're awesome, thanks!", "label": "small", "category": "greetings"}
+{"query": "Much appreciated!", "label": "small", "category": "greetings"}
+{"query": "Peace out", "label": "small", "category": "greetings"}
+{"query": "Cheers mate", "label": "small", "category": "greetings"}
+{"query": "Good to see you", "label": "small", "category": "greetings"}
+{"query": "Is it ethical to use AI-generated code in production without disclosure?", "label": "big", "category": "ethical_philosophical"}
+{"query": "What are the ethical implications of designing apps to be addictive?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Should employees have the right to know when AI is used to evaluate them?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is it ethical to train AI on copyrighted works without compensation?", "label": "big", "category": "ethical_philosophical"}
+{"query": "What moral obligations do companies have when they collect user data?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is digital privacy more important than national security?", "label": "big", "category": "ethical_philosophical"}
+{"query": "What are the ethical implications of facial recognition technology in public spaces?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Should AI companies be required to explain their model's decisions?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Is open-sourcing military AI technology ethical?", "label": "big", "category": "ethical_philosophical"}
+{"query": "What are the social responsibilities of developers who build large-scale platforms?", "label": "big", "category": "ethical_philosophical"}
+{"query": "Compare Nginx and Caddy as reverse proxies for a small project.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between AWS S3 and Google Cloud Storage for object storage?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare HashiCorp Vault and AWS Secrets Manager for secrets management.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between Grafana and Kibana for data visualization?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Pydantic and Marshmallow for Python data validation.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between Flask-RESTful and FastAPI for building APIs?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Alembic and Django ORM migrations for database schema management.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between Weights & Biases and MLflow for experiment tracking?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Locust and k6 for load testing APIs.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between pytest and unittest for Python testing?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Traefik and HAProxy for layer 4/7 load balancing.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between Parquet and ORC file formats for analytics?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Consul and Eureka for service discovery in microservices.", "label": "big", "category": "comparison_technical"}
+{"query": "What are the differences between nats.io and ZeroMQ for lightweight messaging?", "label": "big", "category": "comparison_technical"}
+{"query": "Compare Poetry and Pipenv for Python dependency management.", "label": "big", "category": "comparison_technical"}
+{"query": "What does VPC stand for in AWS?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Denmark?", "label": "small", "category": "factual"}
+{"query": "Who wrote 'The Wealth of Nations'?", "label": "small", "category": "factual"}
+{"query": "What does YAML stand for?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Chile?", "label": "small", "category": "factual"}
+{"query": "Who invented the telescope?", "label": "small", "category": "factual"}
+{"query": "What does SLA stand for?", "label": "small", "category": "factual"}
+{"query": "What is the capital of Romania?", "label": "small", "category": "factual"}
+{"query": "What does RAID stand for in storage?", "label": "small", "category": "factual"}
+{"query": "Who created the Linux kernel?", "label": "small", "category": "factual"}
+{"query": "What is the chemical symbol for nitrogen?", "label": "small", "category": "factual"}
+{"query": "Explain how shard key selection affects performance in MongoDB.", "label": "big", "category": "analysis"}
+{"query": "Analyze the security implications of using environment variables for secrets.", "label": "big", "category": "analysis"}
+{"query": "Explain why tail latency matters more than average latency in user-facing systems.", "label": "big", "category": "analysis"}
+{"query": "Analyze the trade-offs of using stored procedures versus application-side logic.", "label": "big", "category": "analysis"}
+{"query": "Explain how speculative execution attacks like Spectre exploit CPU branch prediction.", "label": "big", "category": "analysis"}
+{"query": "Analyze the engineering impact of adopting a new LTS dependency in a large codebase.", "label": "big", "category": "analysis"}
+{"query": "Explain how consistent hashing minimizes key remapping during node failures.", "label": "big", "category": "analysis"}
+{"query": "Analyze why eventual consistency causes conflicts and how CRDTs resolve them.", "label": "big", "category": "analysis"}
+{"query": "Explain how the JVM JIT compiler optimizes hot code paths at runtime.", "label": "big", "category": "analysis"}
+{"query": "Analyze the performance implications of N+1 queries in ORM-based applications.", "label": "big", "category": "analysis"}
+{"query": "Explain how coroutines differ from threads and processes at the OS level.", "label": "big", "category": "analysis"}
+{"query": "What are the best habits for maintaining a healthy work-life balance as a developer?", "label": "big", "category": "career_learning"}
+{"query": "How do I develop a habit of reading research papers as a practitioner?", "label": "big", "category": "career_learning"}
+{"query": "What are the most effective ways to mentorship junior engineers?", "label": "big", "category": "career_learning"}
+{"query": "How do I position myself for a principal engineer role at a large company?", "label": "big", "category": "career_learning"}
+{"query": "What are the most important lessons from the first 5 years of a software engineering career?", "label": "big", "category": "career_learning"}
+{"query": "How do I build technical credibility with non-technical stakeholders?", "label": "big", "category": "career_learning"}
+{"query": "What is the difference between a tech lead and an engineering manager?", "label": "big", "category": "career_learning"}
+{"query": "How do I build a learning system that keeps me growing continuously as a developer?", "label": "big", "category": "career_learning"}
+{"query": "What should I look for when evaluating a startup's technical health before joining?", "label": "big", "category": "career_learning"}
+{"query": "How do I approach salary negotiation for a remote role at an international company?", "label": "big", "category": "career_learning"}
+{"query": "What are the signs of a toxic engineering culture to watch for in interviews?", "label": "big", "category": "career_learning"}

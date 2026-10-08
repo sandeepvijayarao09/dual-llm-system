@@ -31,6 +31,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 
+from router.eval_data import load_cases
 from router.features import encode_text
 from router.seed_data import load_seed
 
@@ -40,13 +41,8 @@ N_BOOTSTRAP = 2000
 
 # ── data ──────────────────────────────────────────────────────────────────────
 
-CASE_RE = re.compile(
-    r'\(\s*"((?:[^"\\]|\\.)*)"\s*,\s*"(small|big)"\s*,\s*"([a-z_]+)"\s*\)'
-)
-
-
-def load_eval(path: str) -> list[tuple[str, str, str]]:
-    return [(q, l, c) for q, l, c in CASE_RE.findall(open(path).read())]
+def load_eval(filename: str) -> list[tuple[str, str, str]]:
+    return load_cases(filename)
 
 
 def norm(s: str) -> str:
@@ -158,7 +154,7 @@ def baseline_length(q: str, thresh: int) -> str:
 def main() -> None:
     rng = np.random.default_rng(SEED)
     train = load_seed()
-    ev = load_eval("router/eval_1000.py")
+    ev = load_eval("eval_1000.jsonl")
     train_norm = {norm(q) for q, _ in train}
     clean = [(q, l, c) for q, l, c in ev if norm(q) not in train_norm]
 
@@ -239,7 +235,7 @@ def decompose() -> None:
     """Is the tag gain semantic, or is it just query length re-encoded?"""
     rng = np.random.default_rng(SEED)
     train = load_seed()
-    ev = load_eval("router/eval_1000.py")
+    ev = load_eval("eval_1000.jsonl")
     qs = [q for q, _, _ in ev]
     ys = [l for _, l, _ in ev]
     out = []

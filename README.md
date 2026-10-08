@@ -393,6 +393,7 @@ dual-llm-system/
 │   ├── train.py                # Training script
 │   ├── seed_data.py            # 239 labeled training examples
 │   ├── classification_logger.py # SQLite log for retraining
+│   ├── eval_data.py            # loads data/*.jsonl
 │   ├── eval_500.py             # 500-case evaluation script
 │   ├── eval_1000.py            # 1000-case evaluation script
 │   ├── ablation.py             # controlled ablation behind FINDINGS.md
@@ -405,6 +406,10 @@ dual-llm-system/
 │
 ├── db/
 │   └── profile_db.py           # SQLite CRUD for user profiles
+│
+├── data/
+│   ├── eval_500.jsonl          # 500 labelled routing queries
+│   └── eval_1000.jsonl         # 1000 labelled routing queries (23 categories)
 │
 ├── tests/                      # pytest, no API key needed
 ├── paper/                      # NeurIPS-format paper (main.tex, main.pdf)
