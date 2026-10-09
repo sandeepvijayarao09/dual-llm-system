@@ -5,6 +5,7 @@ honest ablation of why it works.** A word-count pre-flight, a TF-IDF + logistic
 regression router, and a GPT-4o-mini classifier fallback pick the model; SQLite
 user profiles and a sliding-window memory personalize the answer.
 
+[![CI](https://github.com/sandeepvijayarao09/dual-llm-system/actions/workflows/ci.yml/badge.svg)](https://github.com/sandeepvijayarao09/dual-llm-system/actions/workflows/ci.yml)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)
 ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?style=flat-square&logo=openai&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)
