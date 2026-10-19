@@ -1,5 +1,13 @@
 # Dual LLM System
 
+## In 30 seconds
+- **What it is:** A chatbot backend that sends each question to a cheap AI model (GPT-4o-mini) or the pricier GPT-4o, and personalizes answers per user.
+- **Why it matters:** Sending every query, even "hi", to the most expensive model wastes money.
+- **Key result:** The router picks the right model 92.6% of the time on 1,000 labelled queries, but a one-line word-count rule reaches 89.7%; my ablation (removing parts to see what matters) traced most of the gain to query length, a quirk of the benchmark labels.
+- **What I did:** Course project at Northeastern with Zichen Qi and Yalin Sun; the follow-up ablation (FINDINGS.md) and current paper are mine.
+- **Built with:** Python, OpenAI API, scikit-learn, Streamlit, SQLite, pytest.
+- **Try it:** `streamlit run app.py` (needs an OpenAI key; `pytest -q` runs tests without one).
+
 **A cascade router that sends each chat query to GPT-4o-mini or GPT-4o, plus an
 honest ablation of why it works.** A word-count pre-flight, a TF-IDF + logistic
 regression router, and a GPT-4o-mini classifier fallback pick the model; SQLite
