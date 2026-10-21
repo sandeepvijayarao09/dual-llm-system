@@ -227,3 +227,37 @@ def test_preflight_long_query_routes_big_without_classifier(
     assert resp.routing_decision == "pre-flight:large-input"
     assert resp.routed_by == "pre-flight"
     assert len(fake_large_llm.calls) == 1
+
+
+# ── Usage accounting ─────────────────────────────────────────────────────────
+
+def test_small_route_usage_has_one_answerer_call(orch, fake_small_llm):
+    fake_small_llm.default_response = "Hello!"
+    resp = orch.process("Hi there!", user_id="u_cost")
+
+    assert [c["stage"] for c in resp.usage["calls"]] == ["answerer"]
+    assert resp.usage["input_tokens"] > 0
+    assert resp.usage["cost_usd"] is None       # fake models have no price
+    assert "latency_ms" in resp.ml_prediction
+
+
+def test_big_route_usage_breaks_down_by_stage_and_is_logged(
+    orch, fake_small_llm, fake_large_llm,
+):
+    # Price the fakes as the real models so the cost is computable
+    fake_small_llm.model, fake_large_llm.model = "gpt-4o-mini", "gpt-4o"
+    fake_large_llm.default_response = "core answer " * 50
+    fake_small_llm.default_response = "INTRO: hi\nCLOSING: bye"
+
+    resp = orch.process("Prove that the square root of 2 is irrational.", user_id="u_cost")
+
+    stages = [c["stage"] for c in resp.usage["calls"]]
+    assert stages == ["reasoner", "summarizer", "personalizer"]
+    assert resp.usage["cost_usd"] == pytest.approx(
+        sum(c["cost_usd"] for c in resp.usage["calls"]))
+
+    summary = orch.routing_log.cost_summary()
+    assert summary["queries"] == 1
+    assert summary["cost_usd"] == pytest.approx(resp.usage["cost_usd"])
+    with orch.routing_log._connect() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM llm_calls").fetchone()[0] == 3
