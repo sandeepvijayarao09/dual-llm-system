@@ -9,8 +9,10 @@ Used for:
 """
 
 import logging
+import time
 
 from openai import OpenAI, APIError, APITimeoutError, RateLimitError
+from llm.usage import record_call, record_openai_response
 from config import OPENAI_API_KEY, SMALL_MODEL, SMALL_LLM_TIMEOUT
 
 logger = logging.getLogger(__name__)
@@ -55,17 +57,22 @@ class SmallLLM:
         if json_mode:
             kwargs["response_format"] = {"type": "json_object"}
 
+        started = time.perf_counter()
         try:
             response = self.client.chat.completions.create(**kwargs)
+            record_openai_response(self.model, started, response)
             content = response.choices[0].message.content if response.choices else None
             return content.strip() if content else ""
         except APITimeoutError:
+            record_call(self.model, started, error="APITimeoutError")
             logger.error("Small LLM timed out after %ss", SMALL_LLM_TIMEOUT)
             raise
         except RateLimitError as exc:
+            record_call(self.model, started, error=type(exc).__name__)
             logger.error("Small LLM rate limited: %s", exc)
             raise
         except APIError as exc:
+            record_call(self.model, started, error=type(exc).__name__)
             logger.error("Small LLM API error: %s", exc)
             raise
 

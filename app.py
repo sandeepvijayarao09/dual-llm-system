@@ -76,6 +76,11 @@ topics = profile.get("topics_discussed", [])
 if topics:
     st.sidebar.caption(f"Topics discussed: {', '.join(topics)}")
 
+
+def _fmt_usd(cost):
+    return "n/a (model not in price table)" if cost is None else f"${cost:.6f}"
+
+
 # ── Main area: Chat ──────────────────────────────────────────────────────────
 st.title("🧠 Dual LLM System")
 
@@ -142,12 +147,24 @@ if prompt := st.chat_input("Ask anything... (or use /large /small to force a mod
         else:
             icon = "☁️ Large LLM (GPT-4o)"
 
+        usage = resp.usage or {}
         metadata = {
             "routing": f"{icon}",
             "decision": resp.routing_decision,
             "routed_by": resp.routed_by,
             "model": resp.model_used,
             "latency": f"{resp.latency_ms:.0f} ms",
+            "est_cost_usd": usage.get("cost_usd"),
+            "cost": _fmt_usd(usage.get("cost_usd")) + f" (list prices as of {usage.get('prices_as_of', '?')})",
+            "tokens": f"{usage.get('input_tokens', 0)} in "
+                      f"({usage.get('cached_input_tokens', 0)} cached) / "
+                      f"{usage.get('output_tokens', 0)} out",
+            "llm_calls": [
+                f"{c['stage']}: {c['model']} — {c['input_tokens']}→{c['output_tokens']} tok, "
+                f"{c['latency_ms']:.0f} ms, {_fmt_usd(c['cost_usd'])}"
+                + (f" [error: {c['error']}]" if c["error"] else "")
+                for c in usage.get("calls", [])
+            ],
             "context_note": resp.context_note or "(none)",
             "ml_prediction": resp.ml_prediction or "(not used)",
             "classification": resp.classification or "(not used)",
@@ -208,3 +225,13 @@ with col3:
             orch.profile_db.delete(user_id)
             st.success(f"Profile for '{user_id}' reset.")
             st.rerun()
+
+# ── Sidebar: session cost (rendered last so it includes the latest answer) ───
+_costs = [m["metadata"].get("est_cost_usd") for m in st.session_state.messages if m.get("metadata")]
+if _costs:
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("💰 Session cost (est.)")
+    _priced = [c for c in _costs if c is not None]
+    st.sidebar.metric("This chat", f"${sum(_priced):.4f}", help="Estimated from token usage and list prices")
+    if len(_priced) < len(_costs):
+        st.sidebar.caption(f"{len(_costs) - len(_priced)} answer(s) used an unpriced model and are excluded.")

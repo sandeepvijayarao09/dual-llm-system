@@ -49,6 +49,7 @@ categories). Reproduce with `python -m router.eval_1000` and
 | One-line baseline: `len(query.split()) <= 8` → small | **89.7%** (95% CI 87.9–91.5) | only 2.9 points behind; intervals overlap |
 | Queries the ML router decides alone | **85.3%** | the other 14.7% also cost one GPT-4o-mini classifier call |
 | Queries sent to GPT-4o | **49.5%** | this drives serving cost; the labels say 45.5% need it |
+| Estimated cost vs always-GPT-4o | **50.6%** | word-count rule 47.8%, perfect routing 46.5%; see FINDINGS.md §7 |
 | Seed training set | **239** examples | |
 
 **What the ablation found** ([FINDINGS.md](FINDINGS.md)):
@@ -288,11 +289,34 @@ Every response in the UI has two expanders:
 
 ## Routing Log and Retraining
 
-Every routing decision is logged to `routing_log.db`:
+Every routing decision is logged to `routing_log.db`, with the tokens,
+estimated cost and latency of every LLM call made to answer it:
 
 ```sql
 routing_events (ts, user_id, query, ml_decision, ml_confidence,
-                llm_decision, llm_confidence, final_routing, model_used)
+                llm_decision, llm_confidence, final_routing, model_used,
+                routed_by, latency_ms, input_tokens, output_tokens,
+                cached_input_tokens, cost_usd)
+llm_calls      (event_id, stage, model, input_tokens, output_tokens,
+                cached_input_tokens, latency_ms, cost_usd, error)
+```
+
+Token counts come from the API's `usage` block; cost is estimated from the
+list prices in `llm/usage.py` (`MODEL_PRICES`, dated by `PRICES_AS_OF`). A
+model that is not in the table is logged with `cost_usd = NULL`, never a
+guess. Older log files gain the new columns automatically. The same numbers
+show in the Streamlit **Routing Details** panel, with a running session total
+in the sidebar.
+
+```bash
+# Measured tokens, cost and latency per route from real traffic
+python -c "
+from router.classification_logger import ClassificationLogger
+print(ClassificationLogger('routing_log.db').cost_summary())
+"
+
+# Offline estimate: what each routing strategy would cost on Eval-1000
+python -m router.cost_eval
 ```
 
 Retraining is a manual step: export the rows where the ML router and the LLM
@@ -442,7 +466,8 @@ All settings are in `.env` (copy from `.env.example`):
 | `ML_ROUTER_CONFIDENCE_THRESHOLD` | `0.65` | Min ML router confidence before LLM fallback |
 | `ENABLE_ML_ROUTER` | `true` | Enable/disable ML router (falls back to LLM only) |
 | `ML_ROUTER_PATH` | `router/models/router_v0.joblib` | Path to trained model |
-| `ROUTING_LOG_PATH` | `routing_log.db` | SQLite log for retraining data |
+| `ROUTING_LOG_PATH` | `routing_log.db` | SQLite log for retraining data and usage/cost |
+| `MODEL_PRICES_PATH` | unset | JSON file that overrides or adds model prices (USD per 1M tokens) |
 | `CONVERSATION_WINDOW_SIZE` | `3` | Turn-pairs kept verbatim in memory |
 | `SMALL_LLM_TIMEOUT` | `60` | API timeout in seconds |
 | `LARGE_LLM_TIMEOUT` | `120` | API timeout in seconds |
