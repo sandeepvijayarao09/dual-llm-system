@@ -27,8 +27,7 @@ import json
 import os
 import statistics
 import sys
-from dataclasses import dataclass, asdict
-from typing import Optional
+from dataclasses import asdict, dataclass
 
 from router.eval_data import load_cases
 
@@ -133,7 +132,7 @@ def _subheader(title: str, width: int = 76) -> str:
     return f"\n{'─' * width}\n  {title}\n{'─' * width}"
 
 
-def _delta(new_val: float, old_val: Optional[float], pct: bool = True) -> str:
+def _delta(new_val: float, old_val: float | None, pct: bool = True) -> str:
     """Format a delta string with + / - sign."""
     if old_val is None:
         return "  (new)"
@@ -181,7 +180,7 @@ def print_report(results: list[QueryResult]) -> None:  # noqa: C901
     print(_header("ML ROUTER EVALUATION REPORT — 1000 LABELED TEST CASES"))
     print(f"\n  Total test cases : {total}")
     print(f"  Cascade threshold: {CASCADE_THRESHOLD}")
-    print(f"  New categories   : conversational, debug_simple, ethical_philosophical, comparison_technical")
+    print("  New categories   : conversational, debug_simple, ethical_philosophical, comparison_technical")
 
     # ── 1. Overall accuracy ──────────────────────────────────────────────────
     print(_subheader("1. OVERALL ML ROUTER ACCURACY"))

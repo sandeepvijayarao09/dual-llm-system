@@ -1,5 +1,5 @@
 """
-Small LLM client — GPT-4o Mini via OpenAI API.
+Small LLM client — the cheap, fast model (default: GPT-4o Mini).
 
 Used for:
   - Query classification / routing
@@ -8,83 +8,12 @@ Used for:
   - Profile updates at end of session
 """
 
-import logging
-import time
-
-from openai import OpenAI, APIError, APITimeoutError, RateLimitError
-from llm.usage import record_call, record_openai_response
-from config import OPENAI_API_KEY, SMALL_MODEL, SMALL_LLM_TIMEOUT
-
-logger = logging.getLogger(__name__)
+from config import SMALL_LLM_TIMEOUT, SMALL_MODEL, SMALL_PROVIDER
+from llm.base import ChatLLM
 
 
-class SmallLLM:
+class SmallLLM(ChatLLM):
+    role = "small"
+
     def __init__(self) -> None:
-        if not OPENAI_API_KEY:
-            raise ValueError(
-                "OPENAI_API_KEY is not set. "
-                "Add it to your .env file or environment."
-            )
-        self.client = OpenAI(
-            api_key=OPENAI_API_KEY,
-            timeout=SMALL_LLM_TIMEOUT,
-        )
-        self.model = SMALL_MODEL
-
-    # ── Public API ────────────────────────────────────────────────────────────
-
-    def complete(
-        self,
-        system: str,
-        user_message: str,
-        history: list[dict] | None = None,
-        max_tokens: int = 1024,
-        json_mode: bool = False,
-    ) -> str:
-        """
-        Call GPT-4o Mini and return the response text.
-        Set json_mode=True to request a JSON-formatted response.
-        """
-        messages = self._build_messages(system, history, user_message)
-
-        kwargs: dict = {
-            "model": self.model,
-            "messages": messages,
-            "max_tokens": max_tokens,
-            "temperature": 0.1 if json_mode else 0.7,
-        }
-
-        if json_mode:
-            kwargs["response_format"] = {"type": "json_object"}
-
-        started = time.perf_counter()
-        try:
-            response = self.client.chat.completions.create(**kwargs)
-            record_openai_response(self.model, started, response)
-            content = response.choices[0].message.content if response.choices else None
-            return content.strip() if content else ""
-        except APITimeoutError:
-            record_call(self.model, started, error="APITimeoutError")
-            logger.error("Small LLM timed out after %ss", SMALL_LLM_TIMEOUT)
-            raise
-        except RateLimitError as exc:
-            record_call(self.model, started, error=type(exc).__name__)
-            logger.error("Small LLM rate limited: %s", exc)
-            raise
-        except APIError as exc:
-            record_call(self.model, started, error=type(exc).__name__)
-            logger.error("Small LLM API error: %s", exc)
-            raise
-
-    # ── Helpers ───────────────────────────────────────────────────────────────
-
-    @staticmethod
-    def _build_messages(
-        system: str, history: list[dict] | None, user_message: str
-    ) -> list[dict]:
-        messages = [{"role": "system", "content": system}]
-        if history:
-            for turn in history:
-                messages.append({"role": turn["role"], "content": turn["content"]})
-        messages.append({"role": "user", "content": user_message})
-        return messages
+        super().__init__(SMALL_PROVIDER, SMALL_MODEL, SMALL_LLM_TIMEOUT)

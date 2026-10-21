@@ -2,13 +2,10 @@
 
 import threading
 import time
-from types import SimpleNamespace
 
 import pytest
 
-from llm.usage import (
-    estimate_cost, price_for, record_call, record_openai_response, stage, track_usage,
-)
+from llm.usage import estimate_cost, price_for, record_call, stage, track_usage
 
 
 def test_cost_uses_per_million_list_prices():
@@ -54,21 +51,6 @@ def test_failed_call_is_recorded_without_cost():
         record_call("gpt-4o", time.perf_counter(), error="RateLimitError")
     assert ledger.calls[0].error == "RateLimitError"
     assert ledger.calls[0].cost_usd is None
-
-
-def test_reads_openai_usage_block():
-    response = SimpleNamespace(
-        model="gpt-4o-mini-2024-07-18",
-        usage=SimpleNamespace(
-            prompt_tokens=120, completion_tokens=30,
-            prompt_tokens_details=SimpleNamespace(cached_tokens=100),
-        ),
-    )
-    with track_usage() as ledger:
-        record_openai_response("gpt-4o-mini", time.perf_counter(), response)
-    call = ledger.calls[0]
-    assert (call.input_tokens, call.output_tokens, call.cached_input_tokens) == (120, 30, 100)
-    assert call.cost_usd == pytest.approx(estimate_cost("gpt-4o-mini", 120, 30, 100))
 
 
 def test_ledgers_are_isolated_between_threads():

@@ -10,7 +10,7 @@ Fallback:
     Classifier (modules/classifier.py). This is the RouteLLM cascade pattern.
 """
 
-from router.ml_router import MLRouter, RouterPrediction
 from router.classification_logger import ClassificationLogger
+from router.ml_router import MLRouter, RouterPrediction
 
 __all__ = ["MLRouter", "RouterPrediction", "ClassificationLogger"]

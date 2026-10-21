@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+build/
+coverage/
+next-env.d.ts
+*.tsbuildinfo
+.env*
+!.env.example
+npm-debug.log*
+.DS_Store
+.vercel
+
+# Agent notes that `next dev` regenerates
+AGENTS.md
+CLAUDE.md

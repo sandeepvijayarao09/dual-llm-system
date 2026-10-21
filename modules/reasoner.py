@@ -8,7 +8,9 @@ Full personalization (intro/closing) is still handled by the Small LLM.
 """
 
 from datetime import date
+
 from llm.large_llm import LargeLLM
+
 
 def _today() -> str:
     return date.today().strftime("%B %d, %Y")
@@ -30,7 +32,7 @@ class Reasoner:
         history: list[dict] | None = None,
         use_thinking: bool = True,
         user_profile: dict | None = None,
-    ) -> str:
+    ) -> tuple[str, dict]:
         """
         Generate a deep, reasoned response using the Large LLM.
         A lightweight audience hint (expertise, domain, format) is injected

@@ -31,24 +31,25 @@ from dataclasses import dataclass, field
 
 from config import (
     CONFIDENCE_THRESHOLD,
-    LARGE_INPUT_THRESHOLD,
-    ML_ROUTER_PATH,
-    ML_ROUTER_CONFIDENCE_THRESHOLD,
-    ENABLE_ML_ROUTER,
-    ROUTING_LOG_PATH,
     CONVERSATION_WINDOW_SIZE,
+    DATABASE_URL,
+    ENABLE_ML_ROUTER,
+    LARGE_INPUT_THRESHOLD,
+    ML_ROUTER_CONFIDENCE_THRESHOLD,
+    ML_ROUTER_PATH,
+    ROUTING_LOG_PATH,
 )
-from llm.small_llm import SmallLLM
+from db.profile_db import ProfileDB
 from llm.large_llm import LargeLLM
+from llm.small_llm import SmallLLM
 from llm.usage import current_ledger, stage, track_usage
-from modules.classifier import Classifier
+from memory import ConversationBuffer
 from modules.answerer import SimpleAnswerer
-from modules.reasoner import Reasoner
+from modules.classifier import Classifier
 from modules.personalizer import Personalizer
 from modules.profile_updater import ProfileUpdater
-from db.profile_db import ProfileDB
-from memory import ConversationBuffer
-from router import MLRouter, ClassificationLogger
+from modules.reasoner import Reasoner
+from router import ClassificationLogger, MLRouter
 
 logger = logging.getLogger(__name__)
 
@@ -87,14 +88,15 @@ class Orchestrator:
         self.context_adder   = Personalizer(self.small_llm)
         self.profile_updater = ProfileUpdater(self.small_llm)
         self.profile_db      = ProfileDB()
+        self.profile_db.seed_personas()
 
         # New: ML router (optional) + per-user memory + routing log
         self.ml_router: MLRouter | None = self._load_ml_router()
         self.buffers: dict[str, ConversationBuffer] = {}
-        self.routing_log = ClassificationLogger(ROUTING_LOG_PATH)
+        self.routing_log = ClassificationLogger(DATABASE_URL or ROUTING_LOG_PATH)
 
-        logger.info("Small LLM : %s", self.small_llm.model)
-        logger.info("Large LLM : %s", self.large_llm.model)
+        logger.info("Small LLM : %s/%s", self.small_llm.provider_name, self.small_llm.model)
+        logger.info("Large LLM : %s/%s", self.large_llm.provider_name, self.large_llm.model)
         logger.info(
             "ML router : %s",
             "loaded" if self.ml_router else "disabled/not-found (using LLM classifier only)",

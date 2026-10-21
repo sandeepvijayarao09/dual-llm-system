@@ -19,8 +19,7 @@ from __future__ import annotations
 import os
 import statistics
 import sys
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 from router.eval_data import load_cases
 
@@ -65,7 +64,7 @@ def run_evaluation(model_path: str) -> list[QueryResult]:
 
     print(f"\nLoading ML Router from: {model_path}")
     router = MLRouter.load(model_path)
-    print(f"Model loaded successfully.\n")
+    print("Model loaded successfully.\n")
 
     results: list[QueryResult] = []
     for query, ground_truth, category in TEST_CASES:

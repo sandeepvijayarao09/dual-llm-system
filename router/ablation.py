@@ -23,8 +23,7 @@ from __future__ import annotations
 
 import json
 import re
-import sys
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -189,7 +188,8 @@ def main() -> None:
         print(f"══ {label}  (n={len(ys)}) ".ljust(100, "═"))
         hdr = (f"{'system':46s} {'acc':>6s} {'95% CI':>15s} {'F1(big)':>8s} "
                f"{'large%':>7s} {'casc%':>6s}")
-        print(hdr); print("-" * len(hdr))
+        print(hdr)
+        print("-" * len(hdr))
         for x in rows:
             ci = f"[{x.acc_lo:.3f},{x.acc_hi:.3f}]"
             cs = f"{x.cascade_rate*100:5.1f}" if x.cascade_rate is not None else "    -"
