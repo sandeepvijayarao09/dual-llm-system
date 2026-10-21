@@ -3,6 +3,7 @@
 import csv
 
 import pytest
+
 from router.classification_logger import ClassificationLogger
 
 
@@ -74,8 +75,7 @@ def test_usage_is_logged_per_query_and_per_call(tmp_path):
             latency_ms=200.0, usage={"input_tokens": 10, "output_tokens": 2,
                                      "cost_usd": None, "calls": []})
 
-    with log._connect() as conn:
-        stages = [r["stage"] for r in conn.execute("SELECT stage FROM llm_calls")]
+    stages = [c["stage"] for c in log.calls()]
     assert stages == ["reasoner", "personalizer"]
 
     summary = log.cost_summary()

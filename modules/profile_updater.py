@@ -15,6 +15,7 @@ No large LLM output is ever processed here.
 
 import json
 import re
+
 from llm.small_llm import SmallLLM
 
 UPDATER_SYSTEM = """You are a user profile analyst.

@@ -15,52 +15,7 @@ This exercises:
     - ClassificationLogger writing
 """
 
-import os
 import pytest
-
-from orchestrator import Orchestrator
-
-
-@pytest.fixture
-def orch(monkeypatch, tmp_path, fake_small_llm, fake_large_llm):
-    """Fully wired Orchestrator with fake LLMs + tmp DBs."""
-    # Isolate databases
-    monkeypatch.setenv("DB_PATH", str(tmp_path / "profiles.db"))
-    monkeypatch.setenv("ROUTING_LOG_PATH", str(tmp_path / "routing.db"))
-
-    # Force config reload (it's read at import time, but the orchestrator
-    # re-reads constants by module import — we patch them directly below)
-    import config, importlib
-    importlib.reload(config)
-
-    o = Orchestrator()
-
-    # Swap in fakes — we re-init the modules that depended on the real clients
-    o.small_llm = fake_small_llm
-    o.large_llm = fake_large_llm
-
-    # Rebuild dependents that captured the original clients
-    from modules.classifier import Classifier
-    from modules.answerer import SimpleAnswerer
-    from modules.reasoner import Reasoner
-    from modules.personalizer import Personalizer
-    from modules.profile_updater import ProfileUpdater
-
-    o.classifier      = Classifier(fake_small_llm)
-    o.answerer        = SimpleAnswerer(fake_small_llm)
-    o.reasoner        = Reasoner(fake_large_llm)
-    o.context_adder   = Personalizer(fake_small_llm)
-    o.profile_updater = ProfileUpdater(fake_small_llm)
-
-    # Re-init buffers dict so they also use the fake small LLM
-    o.buffers.clear()
-
-    # Re-init logger to tmp path
-    from router.classification_logger import ClassificationLogger
-    o.routing_log = ClassificationLogger(str(tmp_path / "routing.db"))
-
-    return o
-
 
 # ── ML router cascade ────────────────────────────────────────────────────────
 
@@ -259,5 +214,4 @@ def test_big_route_usage_breaks_down_by_stage_and_is_logged(
     summary = orch.routing_log.cost_summary()
     assert summary["queries"] == 1
     assert summary["cost_usd"] == pytest.approx(resp.usage["cost_usd"])
-    with orch.routing_log._connect() as conn:
-        assert conn.execute("SELECT COUNT(*) FROM llm_calls").fetchone()[0] == 3
+    assert len(orch.routing_log.calls()) == 3

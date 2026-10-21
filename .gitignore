@@ -29,3 +29,5 @@ profiles.db
 # OS
 .DS_Store
 Thumbs.db
+*.db-wal
+*.db-shm

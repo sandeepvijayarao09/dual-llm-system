@@ -20,7 +20,7 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any
 
 from router.features import encode_text
 
@@ -39,13 +39,13 @@ class MLRouter:
 
     CLASSES = ("big", "small")   # keep order stable for serialization
 
-    def __init__(self, pipeline: Optional[object] = None):
+    def __init__(self, pipeline: Any = None):
         self.pipeline = pipeline
 
     # ── Persistence ───────────────────────────────────────────────────────────
 
     @classmethod
-    def load(cls, path: str) -> "MLRouter":
+    def load(cls, path: str) -> MLRouter:
         import joblib
         if not os.path.exists(path):
             raise FileNotFoundError(
