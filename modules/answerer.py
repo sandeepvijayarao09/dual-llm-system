@@ -2,8 +2,10 @@
 Simple Answerer — runs on the Small LLM (default: Gemma 4 E4B).
 Used for queries classified as "simple" that don't need the Large LLM.
 
-Personalization: the raw user profile is passed to the model as-is.
-The model decides how to adapt — no hardcoded rules.
+Personalization: the profile fields are passed to the model as-is and the
+model decides how to adapt. A profile that holds only a name (the
+orchestrator's greeting stub) gets the plain prompt plus the name: the
+tailoring prompt would push a small model to invent the missing background.
 """
 
 from datetime import date
@@ -19,7 +21,9 @@ Answer the user's question directly and clearly.
 Keep responses brief unless detail is clearly needed.
 Do not add unnecessary caveats or padding.
 Today's date is {today}.
-If a user_name is provided, use it naturally in greetings. Otherwise don't guess it."""
+If the user's name is given, you may use it naturally, e.g. in a greeting.
+You know nothing else about the user: never guess or invent their job, field,
+background or interests, and don't describe yourself as having a profession."""
 
 ANSWERER_SYSTEM_WITH_PROFILE = """You are a helpful, concise assistant with full awareness of who you are talking to.
 
@@ -33,6 +37,8 @@ CRITICAL RULES:
 - Match vocabulary and depth to their expertise level (novice / intermediate / expert).
 - Match format to their preferred_format (bullets / prose / plain).
 - Never ask the user to clarify things already stated in their profile.
+- Use ONLY the facts in [User context]. Never invent or assume anything else
+  about the user, and don't describe yourself as having a profession.
 
 Today's date is {today}.
 Keep responses concise unless detail is clearly needed."""
@@ -53,12 +59,13 @@ class SimpleAnswerer:
         Returns (answer, prompt_debug) where prompt_debug has the exact prompts sent.
         """
         today = _today()
-        if user_profile:
+        if user_profile and self._has_tailoring_fields(user_profile):
             system = ANSWERER_SYSTEM_WITH_PROFILE.format(today=today)
             augmented_query = self._augment_query(query, user_profile)
         else:
             system = ANSWERER_SYSTEM.format(today=today)
-            augmented_query = query
+            name = (user_profile or {}).get("name")
+            augmented_query = f"{query}\n\n[User's name: {name}]" if name else query
 
         result = self.llm.complete(
             system=system,
@@ -74,6 +81,13 @@ class SimpleAnswerer:
         return result, prompt_debug
 
     # ── Helpers ───────────────────────────────────────────────────────────────
+
+    _TAILORING_FIELDS = ("expertise", "domain", "interests", "background", "preferred_format")
+
+    @classmethod
+    def _has_tailoring_fields(cls, user_profile: dict) -> bool:
+        """True when the profile says more about the user than their name."""
+        return any(user_profile.get(f) for f in cls._TAILORING_FIELDS)
 
     @staticmethod
     def _augment_query(query: str, user_profile: dict) -> str:

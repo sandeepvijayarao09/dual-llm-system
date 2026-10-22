@@ -101,3 +101,10 @@ body {
 .prose-answer th, .prose-answer td { border: 1px solid var(--border); padding: 0.35em 0.6em; text-align: left; }
 .prose-answer th { background: var(--sunken); font-weight: 600; }
 .prose-answer hr { border-color: var(--border); }
+
+/* Wide display equations scroll instead of widening the page */
+.prose-answer .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}
