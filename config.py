@@ -57,8 +57,9 @@ class Settings(BaseSettings):
     routing_log_path: str = "routing_log.db"
 
     # ── ML router ────────────────────────────────────────────────────────────
-    # Fitted sklearn pipeline produced by `python -m router.train`
-    ml_router_path: str = "router/models/router_v0.joblib"
+    # Fitted sklearn pipeline. v1 (router/refine.py) is the default; v0 is the
+    # published model the paper's numbers come from (router/train.py).
+    ml_router_path: str = "router/models/router_v1.joblib"
     # Below this top-class probability the LLM classifier decides (cascade)
     ml_router_confidence_threshold: float = Field(0.65, ge=0, le=1)
     # False → the LLM classifier decides every query (old behavior)

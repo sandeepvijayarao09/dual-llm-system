@@ -55,6 +55,7 @@ categories). Reproduce with `python -m router.eval_1000` and
 | ML router accuracy | **92.6%** (95% CI 90.9–94.2) | small vs big, against the labels |
 | One-line baseline: `len(query.split()) <= 8` → small | **89.7%** (95% CI 87.9–91.5) | only 2.9 points behind; intervals overlap |
 | Full cascade with a real classifier (Gemma 4 E4B) | **94.7%** (95% CI 93.2–96.0) | the fallback lifts the 147 deferred queries from 77.6% to 91.8%; see FINDINGS.md §8 |
+| Full cascade with router v1 (default) | **95.8%** (95% CI 94.6–97.0) | v1 is distilled from the Gemma classifier; vs v0: fixes 12 errors, adds 1 (p = 0.003); see FINDINGS.md §9 |
 | Queries the ML router decides alone | **85.3%** | the other 14.7% also get one small-model classifier call |
 | Queries sent to the large model | **49.5%** | this drives serving cost; the labels say 45.5% need it |
 | Estimated cost vs always-Gemini | **49.6%** | about $1.15 per 1,000 queries; word-count rule 46.9%, perfect routing 45.6%; see FINDINGS.md §7 |
@@ -473,10 +474,14 @@ dual-llm-system/
 │   ├── eval_500.py             # 500-case evaluation script
 │   ├── eval_1000.py            # 1000-case evaluation script
 │   ├── ablation.py             # controlled ablation behind FINDINGS.md
+│   ├── distill.py              # distil the LLM classifier into new training data
+│   ├── refine.py               # train + score router v1 (FINDINGS.md §9)
+│   ├── live_cascade_eval.py    # routing with the real LLM classifier
 │   ├── cost_eval.py            # estimated cost per routing strategy
 │   ├── plot_ablation.py        # draws docs/router_vs_baselines.svg
 │   └── models/
-│       └── router_v0.joblib    # Trained model (saved pipeline)
+│       ├── router_v0.joblib    # published model (paper numbers)
+│       └── router_v1.joblib    # default model (FINDINGS.md §9)
 │
 ├── memory/
 │   └── conversation_buffer.py  # Sliding window + rolling summary
@@ -514,7 +519,7 @@ All settings are in `.env` (copy from `.env.example`):
 | `LARGE_INPUT_THRESHOLD` | `2000` | Word count to bypass classification |
 | `ML_ROUTER_CONFIDENCE_THRESHOLD` | `0.65` | Min ML router confidence before LLM fallback |
 | `ENABLE_ML_ROUTER` | `true` | Enable/disable ML router (falls back to LLM only) |
-| `ML_ROUTER_PATH` | `router/models/router_v0.joblib` | Path to trained model |
+| `ML_ROUTER_PATH` | `router/models/router_v1.joblib` | Router model (`router_v0.joblib` is the published one) |
 | `ROUTING_LOG_PATH` | `routing_log.db` | SQLite log for retraining data and usage/cost |
 | `MODEL_PRICES_PATH` | unset | JSON file that overrides or adds model prices (USD per 1M tokens) |
 | `CONVERSATION_WINDOW_SIZE` | `3` | Turn-pairs kept verbatim in memory |
