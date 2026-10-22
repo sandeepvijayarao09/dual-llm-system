@@ -1,5 +1,5 @@
 """
-Simple Answerer — runs on the Small LLM (GPT-4o Mini via OpenAI).
+Simple Answerer — runs on the Small LLM (default: Gemma 4 E4B).
 Used for queries classified as "simple" that don't need the Large LLM.
 
 Personalization: the raw user profile is passed to the model as-is.

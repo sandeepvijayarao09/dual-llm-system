@@ -3,17 +3,13 @@ ChatLLM — the model-role client the modules talk to (SmallLLM / LargeLLM).
 
 A role is a (provider, model) pair from config. The modules only ever call
 `complete(system, user_message, history, max_tokens, json_mode)`; which
-vendor answers is decided by SMALL_PROVIDER / LARGE_PROVIDER.
+backend answers is decided by SMALL_PROVIDER / LARGE_PROVIDER.
 """
 
 from __future__ import annotations
 
-import logging
-
 from config import settings
 from llm.providers import ChatProvider, make_provider
-
-logger = logging.getLogger(__name__)
 
 
 class ChatLLM:
@@ -21,17 +17,19 @@ class ChatLLM:
     temperature: float = 0.7
 
     def __init__(self, provider: str, model: str, timeout: float) -> None:
-        api_key = settings.api_key_for(provider)  # type: ignore[arg-type]
-        # The OpenAI SDK has no other credential source; Anthropic and Gemini
-        # also resolve credentials from their own env vars / profiles.
-        if provider == "openai" and not api_key:
+        if provider == "gemini" and not settings.gemini_api_key:
             raise ValueError(
-                "OPENAI_API_KEY is not set. "
-                "Add it to your .env file or environment."
+                "GEMINI_API_KEY is not set. "
+                "Add it to your .env file or environment (get one at https://aistudio.google.com)."
             )
         self.provider_name = provider
         self.model = model
-        self.provider: ChatProvider = make_provider(provider, api_key, timeout)
+        self.provider: ChatProvider = make_provider(
+            provider,
+            timeout=timeout,
+            api_key=settings.gemini_api_key,
+            base_url=settings.ollama_base_url,
+        )
 
     def complete(
         self,

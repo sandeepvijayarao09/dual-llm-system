@@ -1,6 +1,10 @@
-# Full stack: Postgres + API + web UI.
-#   cp .env.example .env   # add your API key(s)
+# Full stack: Postgres + API + web UI. Gemma runs in Ollama on the host
+# (Docker on macOS has no GPU access, so a containerised Ollama would be slow).
+#   ollama serve & ollama pull gemma4:e4b
+#   cp .env.example .env   # add GEMINI_API_KEY
 #   docker compose up --build
+# On a Linux GPU host, run Ollama in compose instead:
+#   docker compose --profile ollama up --build   (and set OLLAMA_BASE_URL=http://ollama:11434)
 # Web UI: http://localhost:3000   API docs: http://localhost:8000/docs
 services:
   db:
@@ -21,9 +25,12 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://dual_llm:dual_llm@db:5432/dual_llm
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       CORS_ORIGINS: '["http://localhost:3000"]'
     ports:
       - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
@@ -38,5 +45,14 @@ services:
     depends_on:
       - api
 
+  ollama:
+    image: ollama/ollama:0.32.1
+    profiles: ["ollama"]
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      - "11434:11434"
+
 volumes:
   pgdata:
+  ollama:

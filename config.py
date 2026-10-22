@@ -3,11 +3,14 @@ Configuration for the Dual LLM System.
 
 Settings are typed and validated by pydantic-settings, read from the
 environment or a `.env` file. Each model role (small / large) names a
-provider and a model, so the cascade can run on OpenAI, Anthropic or
-Gemini models without code changes:
+provider and a model. Defaults: Gemma 4 E4B running locally through Ollama
+answers the simple queries and runs every support task; Gemini answers the
+hard ones.
 
-    SMALL_PROVIDER=openai     SMALL_MODEL=gpt-4o-mini
-    LARGE_PROVIDER=anthropic  LARGE_MODEL=claude-opus-5-5
+    SMALL_PROVIDER=ollama   SMALL_MODEL=gemma4:e4b
+    LARGE_PROVIDER=gemini   LARGE_MODEL=gemini-3.8-flash
+    # free alternative for the large role (Gemini API free tier, rate-limited):
+    LARGE_PROVIDER=gemini   LARGE_MODEL=gemma-4-31b-it
 
 The module-level constants below are the public interface; the rest of the
 codebase imports them (`from config import SMALL_MODEL`).
@@ -20,21 +23,20 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-Provider = Literal["openai", "anthropic", "gemini"]
+Provider = Literal["ollama", "gemini"]
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # ── Providers and models ─────────────────────────────────────────────────
-    openai_api_key: str = ""
-    anthropic_api_key: str = ""
     gemini_api_key: str = ""
+    ollama_base_url: str = "http://localhost:11434"
 
-    small_provider: Provider = "openai"
-    small_model: str = "gpt-4o-mini"
-    large_provider: Provider = "openai"
-    large_model: str = "gpt-4o"
+    small_provider: Provider = "ollama"
+    small_model: str = "gemma4:e4b"
+    large_provider: Provider = "gemini"
+    large_model: str = "gemini-3.8-flash"
 
     # ── Routing thresholds ───────────────────────────────────────────────────
     # Minimum LLM-classifier confidence to trust a "simple" routing decision
@@ -69,17 +71,11 @@ class Settings(BaseSettings):
     # ── HTTP API ─────────────────────────────────────────────────────────────
     cors_origins: list[str] = ["http://localhost:3000"]
 
-    def api_key_for(self, provider: Provider) -> str:
-        return {
-            "openai": self.openai_api_key,
-            "anthropic": self.anthropic_api_key,
-            "gemini": self.gemini_api_key,
-        }[provider]
-
 
 settings = Settings()
 
-OPENAI_API_KEY = settings.openai_api_key
+GEMINI_API_KEY = settings.gemini_api_key
+OLLAMA_BASE_URL = settings.ollama_base_url
 SMALL_PROVIDER = settings.small_provider
 SMALL_MODEL = settings.small_model
 LARGE_PROVIDER = settings.large_provider

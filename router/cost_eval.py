@@ -61,23 +61,25 @@ class CostModel:
     small_out: int
     big_out: int
     with_profile: bool = True
+    small_model: str = SMALL_MODEL
+    large_model: str = LARGE_MODEL
 
     def small_route(self, q: str) -> float:
-        return estimate_cost(SMALL_MODEL, tokens(ANSWERER_SYSTEM) + tokens(q), self.small_out)
+        return estimate_cost(self.small_model, tokens(ANSWERER_SYSTEM) + tokens(q), self.small_out)
 
     def big_route(self, q: str) -> float:
-        cost = estimate_cost(LARGE_MODEL, tokens(REASONER_SYSTEM) + tokens(q), self.big_out)
-        cost += estimate_cost(SMALL_MODEL, tokens(SUMMARIZER_SYSTEM) + self.big_out, SUMMARY_OUT)
+        cost = estimate_cost(self.large_model, tokens(REASONER_SYSTEM) + tokens(q), self.big_out)
+        cost += estimate_cost(self.small_model, tokens(SUMMARIZER_SYSTEM) + self.big_out, SUMMARY_OUT)
         if self.with_profile:
             cost += estimate_cost(
-                SMALL_MODEL,
+                self.small_model,
                 tokens(CONTEXT_SYSTEM) + PROFILE_TOKENS + tokens(q) + SUMMARY_OUT,
                 PERSONALIZER_OUT,
             )
         return cost
 
     def classifier(self, q: str) -> float:
-        return estimate_cost(SMALL_MODEL, tokens(CLASSIFIER_SYSTEM) + tokens(q), CLASSIFIER_OUT)
+        return estimate_cost(self.small_model, tokens(CLASSIFIER_SYSTEM) + tokens(q), CLASSIFIER_OUT)
 
     def route(self, q: str, decision: str) -> float:
         return self.big_route(q) if decision == "big" else self.small_route(q)
@@ -118,10 +120,13 @@ def main() -> None:
     ap.add_argument("--small-out", type=int, default=150, help="Small-LLM answer tokens")
     ap.add_argument("--big-out", type=int, default=600, help="Large-LLM answer tokens")
     ap.add_argument("--no-profile", action="store_true", help="guest user: no personalizer call")
+    ap.add_argument("--small-model", default=SMALL_MODEL, help="price the small role as this model")
+    ap.add_argument("--large-model", default=LARGE_MODEL, help="price the large role as this model")
     args = ap.parse_args()
+    small, large = args.small_model, args.large_model
 
-    if estimate_cost(LARGE_MODEL, 1, 1) is None or estimate_cost(SMALL_MODEL, 1, 1) is None:
-        raise SystemExit(f"No price for {LARGE_MODEL} or {SMALL_MODEL}: "
+    if estimate_cost(large, 1, 1) is None or estimate_cost(small, 1, 1) is None:
+        raise SystemExit(f"No price for {large} or {small}: "
                          "add it to MODEL_PRICES or MODEL_PRICES_PATH.")
 
     from router.ml_router import MLRouter
@@ -129,10 +134,10 @@ def main() -> None:
     router = MLRouter.load(ML_ROUTER_PATH)
     preds = [router.predict(q) for q, _, _ in cases]
 
-    cm = CostModel(args.small_out, args.big_out, with_profile=not args.no_profile)
+    cm = CostModel(args.small_out, args.big_out, not args.no_profile, small, large)
     rows = evaluate(cm, cases, preds)
 
-    print(f"\nEstimated serving cost on Eval-1000 — {SMALL_MODEL} / {LARGE_MODEL}, "
+    print(f"\nEstimated serving cost on Eval-1000 — {small} / {large}, "
           f"list prices as of {PRICES_AS_OF}")
     print(f"Answer length: small {args.small_out} tok, big {args.big_out} tok; "
           f"personalizer {'on' if cm.with_profile else 'off'}\n")
@@ -145,14 +150,17 @@ def main() -> None:
     print("\nSensitivity — cascade router cost as a share of Always Large:")
     sensitivity = {}
     for big_out in (300, 600, 1200):
-        s_rows = evaluate(CostModel(args.small_out, big_out, cm.with_profile), cases, preds)
+        s_rows = evaluate(CostModel(args.small_out, big_out, cm.with_profile, small, large),
+                          cases, preds)
         share = s_rows[3]["vs_always_large"]
         sensitivity[big_out] = share
         print(f"  big answer {big_out:>5} tok: {share:.1%}")
 
+    if (small, large) != (SMALL_MODEL, LARGE_MODEL):
+        return                                # ad-hoc pricing: don't touch the committed file
     with open(RESULTS_PATH, "w", encoding="utf-8") as f:
-        json.dump({"prices_as_of": PRICES_AS_OF, "small_model": SMALL_MODEL,
-                   "large_model": LARGE_MODEL, "assumptions": vars(args),
+        json.dump({"prices_as_of": PRICES_AS_OF, "small_model": small,
+                   "large_model": large, "assumptions": vars(args),
                    "rows": rows, "cascade_share_by_big_out": sensitivity}, f, indent=2)
     print(f"\nSaved to {RESULTS_PATH}")
 
