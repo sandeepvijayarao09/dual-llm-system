@@ -1,16 +1,16 @@
 """
-Provider adapters — one chat interface over OpenAI, Anthropic and Gemini.
+Provider adapters — one chat interface over local Gemma (Ollama) and Gemini.
 
 Every adapter takes the same arguments, returns the reply text, and records
 the call's token usage and latency in the active usage ledger
 (llm/usage.py). Provider-specific request quirks live here and nowhere else.
 
-    provider = make_provider("anthropic", api_key=..., timeout=60)
-    text = provider.complete(model="claude-haiku-5-5", system="...", messages=[...])
+    provider = make_provider("ollama", base_url="http://localhost:11434", timeout=60)
+    text = provider.complete(model="gemma4:e4b", system="...", messages=[...])
 
-The Anthropic and Gemini SDKs are optional extras (`uv sync --extra
-anthropic`, `--extra gemini`) and are imported only when that provider is
-configured.
+    ollama : any model served by a local Ollama (default small role: gemma4:e4b)
+    gemini : the Gemini API — Gemini models, and Gemma 4 31B / 26B A4B
+             (gemma-4-31b-it, gemma-4-26b-a4b-it; free tier only)
 """
 
 from __future__ import annotations
@@ -18,7 +18,9 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Callable
-from typing import Protocol
+from typing import Any, Protocol
+
+import httpx
 
 from llm.usage import record_call
 
@@ -28,7 +30,7 @@ Message = dict[str, str]          # {"role": "user" | "assistant", "content": st
 
 
 class ProviderError(RuntimeError):
-    """A provider call failed (timeout, rate limit, API error)."""
+    """A provider call failed (timeout, rate limit, API error, model missing)."""
 
 
 class ChatProvider(Protocol):
@@ -45,122 +47,69 @@ class ChatProvider(Protocol):
     ) -> str: ...
 
 
-# ── OpenAI ───────────────────────────────────────────────────────────────────
+# ── Ollama (local Gemma) ─────────────────────────────────────────────────────
 
-class OpenAIProvider:
-    name = "openai"
+class OllamaProvider:
+    """Ollama's native /api/chat. Local inference: no API key, no per-token bill."""
 
-    def __init__(self, api_key: str, timeout: float, client=None) -> None:
-        if client is None:
-            from openai import OpenAI
-            client = OpenAI(api_key=api_key, timeout=timeout)
-        self.client = client
+    name = "ollama"
+
+    def __init__(self, base_url: str, timeout: float, client: httpx.Client | None = None,
+                 **_: Any) -> None:
+        self.client = client or httpx.Client(base_url=base_url, timeout=timeout)
 
     def complete(self, model, system, messages, max_tokens,
                  temperature=None, json_mode=False) -> str:
-        from openai import APIError
-
-        kwargs: dict = {
+        body: dict = {
             "model": model,
             "messages": [{"role": "system", "content": system}, *messages],
-            "max_completion_tokens": max_tokens,
+            "stream": False,
+            # Gemma 4 can think; the routing tiers want direct answers.
+            "think": False,
+            "options": {"num_predict": max_tokens},
         }
-        # o-series reasoning models reject temperature
-        if temperature is not None and not model.startswith("o"):
-            kwargs["temperature"] = temperature
+        if temperature is not None:
+            body["options"]["temperature"] = temperature
         if json_mode:
-            kwargs["response_format"] = {"type": "json_object"}
+            body["format"] = "json"
 
         started = time.perf_counter()
         try:
-            response = self.client.chat.completions.create(**kwargs)
-        except APIError as exc:
+            r = self.client.post("/api/chat", json=body)
+            r.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            record_call(model, started, error=f"HTTP{exc.response.status_code}")
+            detail = exc.response.text[:200]
+            hint = f" (run `ollama pull {model}`)" if exc.response.status_code == 404 else ""
+            raise ProviderError(f"Ollama HTTP {exc.response.status_code}: {detail}{hint}") from exc
+        except httpx.HTTPError as exc:
             record_call(model, started, error=type(exc).__name__)
-            raise ProviderError(f"OpenAI {type(exc).__name__}: {exc}") from exc
+            raise ProviderError(
+                f"Ollama {type(exc).__name__}: is `ollama serve` running? ({exc})") from exc
 
-        usage = response.usage
-        details = getattr(usage, "prompt_tokens_details", None)
+        data = r.json()
         record_call(
-            getattr(response, "model", None) or model, started,
-            input_tokens=getattr(usage, "prompt_tokens", 0) or 0,
-            output_tokens=getattr(usage, "completion_tokens", 0) or 0,
-            cached_input_tokens=getattr(details, "cached_tokens", 0) or 0,
+            data.get("model") or model, started,
+            input_tokens=data.get("prompt_eval_count", 0) or 0,
+            output_tokens=data.get("eval_count", 0) or 0,
         )
-        content = response.choices[0].message.content if response.choices else None
-        return content.strip() if content else ""
+        return (data.get("message", {}).get("content") or "").strip()
 
 
-# ── Anthropic ────────────────────────────────────────────────────────────────
+# ── Gemini API ───────────────────────────────────────────────────────────────
 
-# Current Claude models think by default and reject sampling parameters.
-# Thinking tokens count against max_tokens, so short support calls (a 60-token
-# summary) need headroom; max_tokens is a ceiling, not a charge.
-_CLAUDE_MIN_MAX_TOKENS = 4096
+# Gemini 3.x counts thinking tokens against max_output_tokens, so a 60-token
+# summary request could be spent entirely on thinking. Give every call
+# headroom (it's a ceiling, not a charge) and keep short support calls on low
+# thinking.
+_GEMINI_MIN_OUTPUT_TOKENS = 8192
+_SHORT_CALL_TOKENS = 512
 
-
-def _claude_thinking_kwargs(model: str) -> dict:
-    """Cheapest valid thinking setup per model family for short, simple calls."""
-    if model.startswith("claude-haiku-5"):
-        return {"thinking": {"type": "disabled"}, "output_config": {"effort": "low"}}
-    if model.startswith("claude-sonnet-5-5"):
-        return {"thinking": {"type": "between_tools"}, "output_config": {"effort": "low"}}
-    if model.startswith(("claude-opus-5", "claude-fable-5", "claude-sonnet-5")):
-        # thinking can't be disabled here; effort is the only lever
-        return {"output_config": {"effort": "low"}}
-    return {}
-
-
-class AnthropicProvider:
-    name = "anthropic"
-
-    def __init__(self, api_key: str, timeout: float, client=None) -> None:
-        if client is None:
-            import anthropic
-            client = anthropic.Anthropic(api_key=api_key or None, timeout=timeout)
-        self.client = client
-
-    def complete(self, model, system, messages, max_tokens,
-                 temperature=None, json_mode=False) -> str:
-        import anthropic
-
-        if json_mode:
-            system += "\n\nRespond with a single JSON object and nothing else."
-        kwargs: dict = {
-            "model": model,
-            "system": system,
-            "messages": messages,
-            "max_tokens": max(max_tokens, _CLAUDE_MIN_MAX_TOKENS),
-            **_claude_thinking_kwargs(model),
-        }
-
-        started = time.perf_counter()
-        try:
-            response = self.client.messages.create(**kwargs)
-        except anthropic.APIError as exc:
-            record_call(model, started, error=type(exc).__name__)
-            raise ProviderError(f"Anthropic {type(exc).__name__}: {exc}") from exc
-
-        usage = response.usage
-        cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
-        cache_write = getattr(usage, "cache_creation_input_tokens", 0) or 0
-        record_call(
-            model, started,
-            # Anthropic's input_tokens excludes cached tokens; report the total
-            input_tokens=(usage.input_tokens or 0) + cache_read + cache_write,
-            output_tokens=usage.output_tokens or 0,
-            cached_input_tokens=cache_read,
-        )
-        if response.stop_reason == "refusal":
-            logger.warning("Claude declined the request (%s)", getattr(response, "stop_details", None))
-        return "".join(b.text for b in response.content if b.type == "text").strip()
-
-
-# ── Gemini ───────────────────────────────────────────────────────────────────
 
 class GeminiProvider:
     name = "gemini"
 
-    def __init__(self, api_key: str, timeout: float, client=None) -> None:
+    def __init__(self, api_key: str, timeout: float, client: Any = None, **_: Any) -> None:
         if client is None:
             from google import genai
             client = genai.Client(
@@ -180,11 +129,15 @@ class GeminiProvider:
             )
             for m in messages
         ]
+        thinking = None
+        if model.startswith("gemini-") and max_tokens <= _SHORT_CALL_TOKENS:
+            thinking = types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW)
         config = types.GenerateContentConfig(
             system_instruction=system,
-            max_output_tokens=max_tokens,
+            max_output_tokens=max(max_tokens, _GEMINI_MIN_OUTPUT_TOKENS),
             temperature=temperature,
             response_mime_type="application/json" if json_mode else None,
+            thinking_config=thinking,
         )
 
         started = time.perf_counter()
@@ -199,6 +152,7 @@ class GeminiProvider:
         record_call(
             model, started,
             input_tokens=getattr(usage, "prompt_token_count", 0) or 0,
+            # thinking tokens are billed as output
             output_tokens=(getattr(usage, "candidates_token_count", 0) or 0)
             + (getattr(usage, "thoughts_token_count", 0) or 0),
             cached_input_tokens=getattr(usage, "cached_content_token_count", 0) or 0,
@@ -206,12 +160,16 @@ class GeminiProvider:
         return (response.text or "").strip()
 
 
-_PROVIDERS: dict[str, Callable[..., ChatProvider]] = {"openai": OpenAIProvider, "anthropic": AnthropicProvider, "gemini": GeminiProvider}
+_PROVIDERS: dict[str, Callable[..., ChatProvider]] = {
+    "ollama": OllamaProvider,
+    "gemini": GeminiProvider,
+}
 
 
-def make_provider(name: str, api_key: str, timeout: float) -> ChatProvider:
+def make_provider(name: str, *, timeout: float, api_key: str = "",
+                  base_url: str = "") -> ChatProvider:
     try:
         cls = _PROVIDERS[name]
     except KeyError:
         raise ValueError(f"Unknown provider {name!r}; expected one of {sorted(_PROVIDERS)}") from None
-    return cls(api_key=api_key, timeout=timeout)
+    return cls(api_key=api_key, base_url=base_url, timeout=timeout)

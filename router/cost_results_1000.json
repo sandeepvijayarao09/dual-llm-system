@@ -1,59 +1,61 @@
 {
-  "prices_as_of": "2026-07",
-  "small_model": "gpt-4o-mini",
-  "large_model": "gpt-4o",
+  "prices_as_of": "2026-10",
+  "small_model": "gemma4:e4b",
+  "large_model": "gemini-3.8-flash",
   "assumptions": {
     "small_out": 150,
     "big_out": 600,
-    "no_profile": false
+    "no_profile": false,
+    "small_model": "gemma4:e4b",
+    "large_model": "gemini-3.8-flash"
   },
   "rows": [
     {
       "strategy": "Always Large LLM",
       "accuracy": 0.455,
       "large_share": 1.0,
-      "cost_per_1k": 6.405585250000001,
+      "cost_per_1k": 2.31036375,
       "vs_always_large": 1.0
     },
     {
       "strategy": "Always Small LLM",
       "accuracy": 0.545,
       "large_share": 0.0,
-      "cost_per_1k": 0.10282275,
-      "vs_always_large": 0.016052046142075775
+      "cost_per_1k": 0.0,
+      "vs_always_large": 0.0
     },
     {
       "strategy": "Word-count rule (<=8 words -> small)",
       "accuracy": 0.897,
       "large_share": 0.468,
-      "cost_per_1k": 3.05913565,
-      "vs_always_large": 0.4775731694461485
+      "cost_per_1k": 1.08323625,
+      "vs_always_large": 0.4688596113923619
     },
     {
       "strategy": "Cascade router (ML decision)",
       "accuracy": 0.926,
       "large_share": 0.495,
-      "cost_per_1k": 3.2422136,
-      "vs_always_large": 0.5061541566400978
+      "cost_per_1k": 1.1455305,
+      "vs_always_large": 0.49582257339347535
     },
     {
       "strategy": "Cascade router (cascaded -> big, bound)",
       "accuracy": 0.857,
       "large_share": 0.59,
-      "cost_per_1k": 3.84014585,
-      "vs_always_large": 0.5994996085642603
+      "cost_per_1k": 1.364766,
+      "vs_always_large": 0.5907147738099682
     },
     {
       "strategy": "Oracle (ground-truth labels)",
       "accuracy": 1.0,
       "large_share": 0.455,
-      "cost_per_1k": 2.9771405,
-      "vs_always_large": 0.4647725982571225
+      "cost_per_1k": 1.05318375,
+      "vs_always_large": 0.4558519194217794
     }
   ],
   "cascade_share_by_big_out": {
-    "300": 0.5162608506955746,
-    "600": 0.5061541566400978,
-    "1200": 0.500717931559068
+    "300": 0.49660325786071996,
+    "600": 0.49582257339347535,
+    "1200": 0.49541673073776193
   }
 }

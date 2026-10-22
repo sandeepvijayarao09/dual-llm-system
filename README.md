@@ -1,21 +1,25 @@
 # Dual LLM System
 
 ## In 30 seconds
-- **What it is:** A chatbot backend that sends each question to a cheap AI model (GPT-4o-mini) or the pricier GPT-4o, and personalizes answers per user.
+- **What it is:** A chatbot backend that sends each question to a small model running on your own machine (Gemma 4 E4B) or a paid cloud model (Gemini 3.8 Flash), and personalizes answers per user.
 - **Why it matters:** Sending every query, even "hi", to the most expensive model wastes money.
 - **Key result:** The router picks the right model 92.6% of the time on 1,000 labelled queries, but a one-line word-count rule reaches 89.7%; my ablation (removing parts to see what matters) traced most of the gain to query length, a quirk of the benchmark labels.
 - **What I did:** Course project at Northeastern with Zichen Qi and Yalin Sun; the follow-up ablation (FINDINGS.md) and current paper are mine.
-- **Built with:** Python, FastAPI, scikit-learn, SQLAlchemy (SQLite or Postgres), Next.js + TypeScript, OpenAI / Anthropic / Gemini adapters, uv, Docker.
-- **Try it:** `docker compose up --build` and open http://localhost:3000 (needs an API key; `uv run pytest -q` runs tests without one).
+- **Built with:** Python, FastAPI, scikit-learn, SQLAlchemy (SQLite or Postgres), Next.js + TypeScript, Ollama (Gemma 4) + Gemini API, uv, Docker.
+- **Try it:** `docker compose up --build` and open http://localhost:3000 (needs Ollama with `gemma4:e4b` and a Gemini API key; `uv run pytest -q` runs tests without either).
 
-**A cascade router that sends each chat query to GPT-4o-mini or GPT-4o, plus an
+**A cascade router that sends each chat query to a small or a large model, plus an
 honest ablation of why it works.** A word-count pre-flight, a TF-IDF + logistic
-regression router, and a GPT-4o-mini classifier fallback pick the model; stored
-user profiles and a sliding-window memory personalize the answer.
+regression router, and a small-model classifier fallback pick the model; stored
+user profiles and a sliding-window memory personalize the answer. The default pair is Gemma 4 E4B (local, via Ollama) and
+Gemini 3.8 Flash; the original course project and the paper ran on GPT-4o-mini
+and GPT-4o. The router's accuracy numbers are offline and don't depend on the
+pair.
 
 [![CI](https://github.com/sandeepvijayarao09/dual-llm-system/actions/workflows/ci.yml/badge.svg)](https://github.com/sandeepvijayarao09/dual-llm-system/actions/workflows/ci.yml)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)
-![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?style=flat-square&logo=openai&logoColor=white)
+![Gemma 4](https://img.shields.io/badge/Gemma_4-E4B-4285F4?style=flat-square&logo=google&logoColor=white)
+![Gemini](https://img.shields.io/badge/Gemini-3.8_Flash-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-1.8-F7931E?style=flat-square&logo=scikit-learn&logoColor=white)
@@ -33,24 +37,27 @@ The follow-up ablation in [FINDINGS.md](FINDINGS.md) and the current paper in
 ## What it does
 
 Most LLM apps send every query to the most expensive model, even `"hi"`. This
-system routes each query through a 3-layer cascade: cheap queries go to
-GPT-4o-mini, hard ones to GPT-4o, and the expensive classifier only runs when
-the offline router is unsure. It also keeps a per-user profile and a bounded
-conversation memory, and only sends the profile when the query needs it.
+system routes each query through a 3-layer cascade: easy queries go to Gemma
+4 E4B on your own machine (no per-token cost), hard ones to Gemini, and the
+LLM classifier only runs when the offline router is unsure. It also keeps a
+per-user profile and a bounded conversation memory, and only sends the profile
+when the query needs it.
 
 ## Key numbers, and what they mean
 
 All from the committed model on Eval-1000 (1,000 author-labelled queries, 23
 categories). Reproduce with `python -m router.eval_1000` and
-`python -m router.ablation`.
+`python -m router.ablation`; the live cascade row needs Ollama:
+`python -m router.live_cascade_eval --all`.
 
 | Metric | Value | Read it as |
 |---|---|---|
 | ML router accuracy | **92.6%** (95% CI 90.9–94.2) | small vs big, against the labels |
 | One-line baseline: `len(query.split()) <= 8` → small | **89.7%** (95% CI 87.9–91.5) | only 2.9 points behind; intervals overlap |
-| Queries the ML router decides alone | **85.3%** | the other 14.7% also cost one GPT-4o-mini classifier call |
-| Queries sent to GPT-4o | **49.5%** | this drives serving cost; the labels say 45.5% need it |
-| Estimated cost vs always-GPT-4o | **50.6%** | word-count rule 47.8%, perfect routing 46.5%; see FINDINGS.md §7 |
+| Full cascade with a real classifier (Gemma 4 E4B) | **94.7%** (95% CI 93.2–96.0) | the fallback lifts the 147 deferred queries from 77.6% to 91.8%; see FINDINGS.md §8 |
+| Queries the ML router decides alone | **85.3%** | the other 14.7% also get one small-model classifier call |
+| Queries sent to the large model | **49.5%** | this drives serving cost; the labels say 45.5% need it |
+| Estimated cost vs always-Gemini | **49.6%** | about $1.15 per 1,000 queries; word-count rule 46.9%, perfect routing 45.6%; see FINDINGS.md §7 |
 | Seed training set | **239** examples | |
 
 **What the ablation found** ([FINDINGS.md](FINDINGS.md)):
@@ -94,7 +101,7 @@ User Query
     │ low confidence (~15% of queries)
     ▼
 ┌─────────────────────────────────────────────────────────┐
-│  LAYER 2 — LLM Classifier  (GPT-4o-mini, JSON mode)    │
+│  LAYER 2 — LLM Classifier  (Small LLM, JSON mode)       │
 │  Returns: complexity, intent, confidence,               │
 │           requires_tools, sensitive,                    │
 │           routing_decision, profile_relevant            │
@@ -103,14 +110,14 @@ User Query
 │  parse failure     → default "big"                      │
 └─────────────────────────────────────────────────────────┘
     │
-    ├─── "small" ──────────────────────────────────────────►  GPT-4o-mini
+    ├─── "small" ──────────────────────────────────────────►  Gemma 4 E4B (local)
     │    + profile context (if profile_relevant=true)          SimpleAnswerer
     │    + name stub (always, for greeting personalization)     ≤ 512 tokens
     │
-    └─── "big" ────────────────────────────────────────────►  GPT-4o
+    └─── "big" ────────────────────────────────────────────►  Gemini 3.8 Flash
          Step 1: Reasoner (core answer, audience hint)         ≤ 4096 tokens
-         Step 2: Summarizer → 1-line summary (GPT-4o-mini)
-         Step 3: Personalizer → intro + closing (GPT-4o-mini)
+         Step 2: Summarizer → 1-line summary (Small LLM)
+         Step 3: Personalizer → intro + closing (Small LLM)
          Step 4: Assemble: intro + core + "---" + closing
 ```
 
@@ -119,25 +126,22 @@ User Query
 ```
 Next.js UI (web/, :3000) ──/api──►  FastAPI (api/, :8000) ──►  Orchestrator (cascade above)
                                      POST /v1/chat/completions      │
-                                     (OpenAI-compatible)            ├─► provider adapters
-                                                                    │   OpenAI · Anthropic · Gemini
+                                     (chat-completions format)      ├─► provider adapters
+                                                                    │   Ollama (Gemma 4) · Gemini API
                                                                     └─► SQLAlchemy: profiles, routing log
                                                                         (SQLite, or Postgres via DATABASE_URL)
 ```
 
 Each model role is a provider plus a model (`SMALL_PROVIDER`/`SMALL_MODEL`,
-`LARGE_PROVIDER`/`LARGE_MODEL`), so the cascade runs on any of the three
-vendors without code changes. Because the endpoint is OpenAI-compatible, any
-OpenAI client can use the router as a model called `auto` (or `small`/`large`
-to force one):
+`LARGE_PROVIDER`/`LARGE_MODEL`): any Ollama model or any Gemini API model,
+including Gemma 4 31B (`gemma-4-31b-it`, free tier) for the large role. The
+endpoint follows the OpenAI chat-completions format, so existing chat
+clients can call the router as a model named `auto` (or `small`/`large` to
+force one):
 
-```python
-from openai import OpenAI
-client = OpenAI(base_url="http://localhost:8000/v1", api_key="unused")
-r = client.chat.completions.create(model="auto", user="cs_student",
-                                   messages=[{"role": "user", "content": "Hi!"}])
-print(r.choices[0].message.content)
-print(r.model_extra["routing"]["decision"], r.model_extra["routing"]["cost_usd"])
+```bash
+curl -s localhost:8000/v1/chat/completions -H 'content-type: application/json' \
+  -d '{"model": "auto", "user": "cs_student", "messages": [{"role": "user", "content": "Hi!"}]}'
 ```
 
 The response adds a `routing` object: decision, who decided, every LLM call
@@ -186,9 +190,9 @@ encode_text("why is the sky blue?")
 
 ```
 Overall Accuracy  : 92.6%
-Cascade Rate      : 14.7%   (queries that also get the GPT-4o-mini classifier)
+Cascade Rate      : 14.7%   (queries that also get the LLM classifier)
 ML decides alone  : 85.3%
-Sent to GPT-4o    : 49.5%
+Sent to Large LLM : 49.5%
 
 Confusion Matrix (positive = 'big'):
   TP = 438   FN = 17
@@ -295,8 +299,8 @@ Force a model directly without any routing logic:
 
 | Command | Effect |
 |---|---|
-| `/large <query>` | Skip all routing → GPT-4o directly |
-| `/small <query>` | Skip all routing → GPT-4o-mini directly |
+| `/large <query>` | Skip all routing → Large LLM directly |
+| `/small <query>` | Skip all routing → Small LLM directly |
 
 Examples:
 ```
@@ -374,7 +378,8 @@ python -m router.train --extra real_traffic.csv
 
 ### Prerequisites
 
-- An API key for at least one provider (OpenAI for the defaults)
+- [Ollama](https://ollama.com) with Gemma 4 E4B: `ollama pull gemma4:e4b` (~9.6 GB; runs on a 16 GB+ machine)
+- A Gemini API key from [Google AI Studio](https://aistudio.google.com)
 - Docker, **or** [uv](https://docs.astral.sh/uv/) + Node 24 for local development
 
 ### Run everything (Docker)
@@ -382,7 +387,8 @@ python -m router.train --extra real_traffic.csv
 ```bash
 git clone https://github.com/sandeepvijayarao09/dual-llm-system.git
 cd dual-llm-system
-cp .env.example .env            # set OPENAI_API_KEY (or another provider)
+ollama serve & ollama pull gemma4:e4b
+cp .env.example .env            # set GEMINI_API_KEY
 docker compose up --build       # Postgres + API (:8000) + web UI (:3000)
 ```
 
@@ -435,7 +441,7 @@ Defined in [`data/personas.json`](data/personas.json) and created on first start
 
 ```
 dual-llm-system/
-├── api/                        # FastAPI service (OpenAI-compatible chat endpoint)
+├── api/                        # FastAPI service (chat-completions endpoint)
 ├── web/                        # Next.js + TypeScript UI
 ├── main.py                     # CLI entry point
 ├── orchestrator.py             # Central routing engine
@@ -444,10 +450,10 @@ dual-llm-system/
 ├── Dockerfile, docker-compose.yml
 │
 ├── llm/
-│   ├── providers.py            # OpenAI / Anthropic / Gemini adapters
+│   ├── providers.py            # Ollama (local Gemma) + Gemini API adapters
 │   ├── base.py                 # model-role client the modules call
-│   ├── small_llm.py            # Small role (default GPT-4o-mini)
-│   ├── large_llm.py            # Large role (default GPT-4o)
+│   ├── small_llm.py            # Small role (default Gemma 4 E4B)
+│   ├── large_llm.py            # Large role (default Gemini 3.8 Flash)
 │   └── usage.py                # per-call tokens, latency, est. cost
 │
 ├── modules/
@@ -498,11 +504,11 @@ All settings are in `.env` (copy from `.env.example`):
 
 | Variable | Default | Description |
 |---|---|---|
-| `OPENAI_API_KEY` | required for OpenAI | OpenAI API key |
-| `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` | unset | Keys for the other providers |
-| `SMALL_PROVIDER`, `LARGE_PROVIDER` | `openai` | `openai`, `anthropic` or `gemini` per role |
-| `LARGE_MODEL` | `gpt-4o` | Model for complex queries |
-| `SMALL_MODEL` | `gpt-4o-mini` | Model for simple queries + all support tasks |
+| `GEMINI_API_KEY` | required for Gemini | Gemini API key |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Where Ollama serves the local model |
+| `SMALL_PROVIDER` / `LARGE_PROVIDER` | `ollama` / `gemini` | `ollama` or `gemini` per role |
+| `SMALL_MODEL` | `gemma4:e4b` | Model for simple queries + all support tasks |
+| `LARGE_MODEL` | `gemini-3.8-flash` | Model for complex queries (`gemini-4-argon` stronger; `gemma-4-31b-it` free tier) |
 | `DATABASE_URL` | unset | SQLAlchemy URL for profiles + routing log (e.g. Postgres); overrides the two SQLite paths |
 | `CONFIDENCE_THRESHOLD` | `0.75` | Min LLM classifier confidence to trust "small" |
 | `LARGE_INPUT_THRESHOLD` | `2000` | Word count to bypass classification |
@@ -539,9 +545,10 @@ python -m router.train --extra my_data.csv
 
 | Layer | Technology |
 |---|---|
-| Small / Large LLM | GPT-4o-mini / GPT-4o by default; any OpenAI, Anthropic or Gemini model per role |
+| Small LLM | Gemma 4 E4B via Ollama (local, no per-token cost) |
+| Large LLM | Gemini 3.8 Flash via the Gemini API (any Gemini API or Ollama model per role) |
 | ML Router | scikit-learn — TF-IDF + Logistic Regression |
-| API | FastAPI + Uvicorn, OpenAI-compatible `/v1/chat/completions` |
+| API | FastAPI + Uvicorn, chat-completions-format `/v1/chat/completions` |
 | Web UI | Next.js (App Router), React, TypeScript, Tailwind CSS |
 | Storage | SQLAlchemy 2 — SQLite in development, Postgres via `DATABASE_URL` |
 | Config | pydantic-settings (typed, validated) |

@@ -61,10 +61,10 @@ def test_usage_is_logged_per_query_and_per_call(tmp_path):
         "input_tokens": 300, "output_tokens": 80, "cached_input_tokens": 0,
         "cost_usd": 0.0012,
         "calls": [
-            {"stage": "reasoner", "model": "gpt-4o", "input_tokens": 200,
+            {"stage": "reasoner", "model": "gemini-3.8-flash", "input_tokens": 200,
              "output_tokens": 60, "cached_input_tokens": 0, "latency_ms": 900.0,
              "cost_usd": 0.0011, "error": None},
-            {"stage": "personalizer", "model": "gpt-4o-mini", "input_tokens": 100,
+            {"stage": "personalizer", "model": "gemma4:e4b", "input_tokens": 100,
              "output_tokens": 20, "cached_input_tokens": 0, "latency_ms": 300.0,
              "cost_usd": 0.0001, "error": None},
         ],

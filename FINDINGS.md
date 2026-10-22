@@ -123,6 +123,62 @@ big) because the eval has no model outputs.
   cascaded queries; the bound row sends them all to GPT-4o. Real traffic
   settles this: `routing_log.db` now records measured tokens and cost per call.
 
+### 7a. Default pair since the Gemma/Gemini switch
+
+The system now defaults to Gemma 4 E4B (local, via Ollama) for the small role
+and every support call, and Gemini 3.8 Flash for the large role. Local calls
+have no per-token price, so only Gemini calls cost money (same assumptions as
+above; Gemini list prices as of 2026-10):
+
+| Strategy | Accuracy | Gemini share | $ / 1k queries | vs always Gemini |
+|---|---|---|---|---|
+| Always Gemini 3.8 Flash | 45.5% | 100.0% | 2.31 | 100.0% |
+| Always Gemma 4 E4B | 54.5% | 0.0% | 0.00 | 0.0% |
+| Word-count rule (≤8 words → small) | 89.7% | 46.8% | 1.08 | 46.9% |
+| CascadeRoute (ML decision) | 92.6% | 49.5% | 1.15 | 49.6% |
+| CascadeRoute, cascaded → big (bound) | 85.7% | 59.0% | 1.37 | 59.1% |
+| Oracle (perfect routing) | 100.0% | 45.5% | 1.05 | 45.6% |
+
+The ordering and gaps are unchanged; the router still costs ~2.7 points more
+than the word-count rule. These rows say nothing about answer quality: the
+accuracy column is agreement with the hand-written Eval-1000 labels, and
+whether Gemma 4 E4B answers the "small" queries as well as GPT-4o-mini did is
+untested.
+
+## 8. The live cascade, with a real classifier
+
+Reproduce with `.venv/bin/python -m router.live_cascade_eval --all` (needs
+Ollama with `gemma4:e4b`; local, $0). Until now every number above assumed
+the ML router's own guess for the 147 queries it defers on. This run asks the
+LLM classifier (Gemma 4 E4B, temperature 0.1, one run) for those 147, applies
+the orchestrator's confidence rule, and also runs the classifier alone on all
+1,000.
+
+| Router | Accuracy | 95% CI | Large-model rate |
+|---|---|---|---|
+| Word-count rule (≤8 words → small) | 89.7% | [0.879, 0.915] | 46.8% |
+| ML router alone | 92.6% | [0.909, 0.942] | 49.5% |
+| LLM classifier alone (Gemma 4 E4B) | 93.8% | [0.922, 0.953] | 48.3% |
+| **Full cascade (ML router → Gemma 4 E4B)** | **94.7%** | [0.932, 0.960] | 49.8% |
+
+- On the 147 deferred queries the classifier scores **91.8%**, against 77.6%
+  for the ML router's guess. That moves the cascade from 92.6% to 94.7%.
+- With a real classifier the cascade's interval no longer overlaps the
+  word-count rule's: +5.0 points, not +2.9. The fallback layer carries the
+  gain; the ML router alone remains within reach of the one-line rule.
+- The classifier alone is close (93.8%) but costs ~0.93 s of local inference on
+  every query (median; p95 1.0 s), against ~0 ms for the ML router. The
+  cascade pays that only on 14.7% of traffic.
+- Zero unparseable replies in 1,147 calls; the low-confidence upgrade rule
+  fired once in the cascade and 7 times in the classifier-only run.
+- The large-model rate (49.8%) matches the offline estimate, so §7a's cost
+  figure (~49.6% of always-Gemini) holds.
+
+Caveats: one run at temperature 0.1, so expect small run-to-run variation;
+the CIs are binomial bootstrap on the accuracy, not paired tests; and the
+benchmark is still the length-confounded one from §4 — an LLM classifier can
+read length too. This is routing accuracy, not answer quality.
+
 ## What this means
 
 The engineering is sound and the reported numbers are honest and reproducible.

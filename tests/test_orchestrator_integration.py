@@ -3,7 +3,7 @@ End-to-end integration tests for the Orchestrator.
 
 We build an Orchestrator with real module wiring, then monkey-patch its LLM
 clients and DB paths to:
-    - never hit OpenAI
+    - never call a real model
     - use isolated tmp databases per test
     - let us script responses from the small/large LLM
 
@@ -200,7 +200,7 @@ def test_big_route_usage_breaks_down_by_stage_and_is_logged(
     orch, fake_small_llm, fake_large_llm,
 ):
     # Price the fakes as the real models so the cost is computable
-    fake_small_llm.model, fake_large_llm.model = "gpt-4o-mini", "gpt-4o"
+    fake_small_llm.model, fake_large_llm.model = "gemma4:e4b", "gemini-3.8-flash"
     fake_large_llm.default_response = "core answer " * 50
     fake_small_llm.default_response = "INTRO: hi\nCLOSING: bye"
 
