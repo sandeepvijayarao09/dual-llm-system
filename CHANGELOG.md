@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0 — unreleased
+## 2.0.0 — 2026-11-11
 
 The cascade now runs on Gemma 4 E4B (local, via Ollama) and Gemini, behind a
 FastAPI service and a Next.js UI, with per-call cost accounting and a
