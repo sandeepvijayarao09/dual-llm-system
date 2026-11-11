@@ -1,6 +1,6 @@
 [project]
 name = "dual-llm-system"
-version = "0.2.0"
+version = "2.0.0"
 description = "Cost-aware routing between a small and a large LLM: ML router → LLM classifier cascade, personalization, usage accounting."
 readme = "README.md"
 license = "MIT"

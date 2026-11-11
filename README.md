@@ -57,6 +57,7 @@ categories). Reproduce with `python -m router.eval_1000` and
 | Full cascade with a real classifier (Gemma 4 E4B) | **94.7%** (95% CI 93.2–96.0) | the fallback lifts the 147 deferred queries from 77.6% to 91.8%; see FINDINGS.md §8 |
 | Full cascade with router v1 (default) | **95.8%** (95% CI 94.6–97.0) | v1 is distilled from the Gemma classifier; vs v0: fixes 12 errors, adds 1 (p = 0.003); see FINDINGS.md §9 |
 | Best threshold, if you could tune on the test set | **96.0%** at ~12% deferred | the shipped 0.65 gives 95.8%; an oracle deferring 3.7% would reach 96.9% — see the deferral curve, FINDINGS.md §10 |
+| JEV 1.14 (OpenRouter) as the router instead | **91.5%** | the ML router v1 gets 93.2% at 0.4 ms vs JEV's 171 ms; as the cascade's fallback JEV ties Gemma (95.9% vs 95.8%); see FINDINGS.md §11 |
 | Queries the ML router decides alone | **85.3%** | the other 14.7% also get one small-model classifier call |
 | Queries sent to the large model | **49.5%** | this drives serving cost; the labels say 45.5% need it |
 | Estimated cost vs always-Gemini | **49.6%** | about $1.15 per 1,000 queries; word-count rule 46.9%, perfect routing 45.6%; see FINDINGS.md §7 |
@@ -479,6 +480,7 @@ dual-llm-system/
 │   ├── refine.py               # train + score router v1 (FINDINGS.md §9)
 │   ├── live_cascade_eval.py    # routing with the real LLM classifier
 │   ├── deferral_curve.py       # accuracy vs deferral share, random/oracle baselines
+│   ├── jev_eval.py             # JEV (OpenRouter) vs Gemma vs the ML router
 │   ├── cost_eval.py            # estimated cost per routing strategy
 │   ├── plot_ablation.py        # draws docs/router_vs_baselines.svg
 │   └── models/

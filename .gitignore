@@ -34,3 +34,6 @@ Thumbs.db
 
 # Locally trained routers (committed models are router_v0 / router_v1)
 router/models/router_trained.joblib
+
+# Local Claude Code / preview config
+.claude/

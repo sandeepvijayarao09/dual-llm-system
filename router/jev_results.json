@@ -1,0 +1,84 @@
+{
+  "jev_model": "typesafe/jev-1.14",
+  "router": "router_v1.joblib",
+  "classifier_alone": {
+    "jev": 0.915,
+    "jev_ci": [
+      0.898,
+      0.933
+    ],
+    "gemma": 0.938,
+    "jev_vs_gemma_fixes_breaks_p": [
+      16,
+      39,
+      0.0026672623828598026
+    ]
+  },
+  "cascade": {
+    "jev": 0.959,
+    "gemma": 0.958,
+    "deferred": 0.146,
+    "jev_on_deferred": 0.9178082191780822,
+    "gemma_on_deferred": 0.910958904109589,
+    "jev_vs_gemma_fixes_breaks_p": [
+      6,
+      5,
+      1.0
+    ]
+  },
+  "jev_where_length_misleads": 0.7961165048543689,
+  "vs_ml_router": {
+    "router_v1.joblib": {
+      "accuracy": 0.932,
+      "ci": [
+        0.916,
+        0.948
+      ],
+      "ms_per_query": 0.35,
+      "where_length_misleads": 0.6990291262135923,
+      "jev_vs_router_fixes_breaks_p": [
+        40,
+        57,
+        0.10376938287271804
+      ],
+      "jev_vs_router_where_length_misleads": [
+        16,
+        6,
+        0.052478790283203125
+      ],
+      "agreement": 0.903
+    },
+    "router_v0.joblib": {
+      "accuracy": 0.926,
+      "ci": [
+        0.91,
+        0.943
+      ],
+      "ms_per_query": 0.143,
+      "where_length_misleads": 0.5242718446601942,
+      "jev_vs_router_fixes_breaks_p": [
+        44,
+        55,
+        0.3148798910376227
+      ],
+      "jev_vs_router_where_length_misleads": [
+        33,
+        5,
+        4.255962267052382e-06
+      ],
+      "agreement": 0.901
+    }
+  },
+  "large_share": {
+    "jev_alone": 0.494,
+    "gemma_alone": 0.485
+  },
+  "agreement_jev_gemma": 0.945,
+  "jev_latency_ms": {
+    "median": 170.9,
+    "p95": 225.3
+  },
+  "jev_cost_usd": 0.017855,
+  "jev_upgraded_low_confidence": 96,
+  "wall_s": 23.0
+}
