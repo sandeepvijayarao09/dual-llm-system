@@ -47,7 +47,7 @@ def create_app(orchestrator: Orchestrator | None = None) -> FastAPI:
         app.state.orchestrator = orchestrator or Orchestrator()
         yield
 
-    app = FastAPI(title="Dual LLM System", version="0.2.0", lifespan=lifespan)
+    app = FastAPI(title="Dual LLM System", version="2.0.0", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

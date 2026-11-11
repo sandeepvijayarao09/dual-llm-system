@@ -22,6 +22,7 @@ import argparse
 import json
 import os
 import statistics
+import sys
 import time
 
 from config import CONFIDENCE_THRESHOLD, ML_ROUTER_CONFIDENCE_THRESHOLD, ML_ROUTER_PATH
@@ -84,6 +85,8 @@ def main() -> None:
     ap.add_argument("--all", action="store_true",
                     help="also run the LLM classifier alone on all 1000 queries")
     args = ap.parse_args()
+    # Results appear as they're computed, even when stdout is a file or a pipe
+    sys.stdout.reconfigure(line_buffering=True)  # type: ignore[attr-defined]
 
     small = SmallLLM()
     classifier = Classifier(small)
@@ -92,7 +95,8 @@ def main() -> None:
     preds = [router.predict(q) for q, _, _ in cases]
     deferred = [i for i, p in enumerate(preds) if p.confidence < ML_ROUTER_CONFIDENCE_THRESHOLD]
 
-    print(f"\nLive cascade eval — classifier on {small.provider_name}/{small.model}")
+    print(f"\nLive cascade eval — router {os.path.basename(ML_ROUTER_PATH)}, "
+          f"classifier on {small.provider_name}/{small.model}")
     print(f"ML router defers on {len(deferred)}/{len(cases)} queries "
           f"(confidence < {ML_ROUTER_CONFIDENCE_THRESHOLD})\n")
     started = time.time()
@@ -123,6 +127,7 @@ def main() -> None:
           f"p95 {deferred_summary['latency_ms_p95']:.0f} ms")
 
     result = {
+        "router": os.path.basename(ML_ROUTER_PATH),
         "small_model": f"{small.provider_name}/{small.model}",
         "deferred": deferred_summary,
         "ml_guess_accuracy_on_deferred": ml_only_on_deferred,

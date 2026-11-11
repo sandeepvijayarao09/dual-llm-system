@@ -35,3 +35,19 @@ def test_local_small_model_makes_the_small_route_free():
         CostModel(150, 600, small_model="gemma4:e4b", large_model="gemini-3.8-flash"),
         CASES, [_pred("small", 0.9), _pred("big", 0.9)])}
     assert rows["Always Small LLM"]["cost_per_1k"] == 0.0
+
+
+def test_jev_helpers_without_network(tmp_path):
+    """The JEV eval's offline pieces: key loading and the paired test."""
+    import numpy as np
+
+    from router.jev_eval import _key_from_dotenv, mcnemar
+
+    env = tmp_path / ".env"
+    env.write_text("OTHER=1\nOPENROUTER_API_KEY='sk-or-test'\n")
+    assert _key_from_dotenv(str(env)) == "sk-or-test"
+    assert _key_from_dotenv(str(tmp_path / "missing")) == ""
+    a = np.array([True, True, False, False])
+    b = np.array([True, False, True, True])
+    fixes, breaks, p = mcnemar(a, b)
+    assert (fixes, breaks) == (2, 1) and 0 < p <= 1

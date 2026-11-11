@@ -1,0 +1,27 @@
+{
+  "router": "router_v1.joblib",
+  "small_model": "ollama/gemma4:e4b",
+  "deferred": {
+    "n": 146,
+    "accuracy": 0.9041095890410958,
+    "big_share": 0.3767123287671233,
+    "parse_failures": 0,
+    "upgraded_low_confidence": 1,
+    "latency_ms_median": 934.0,
+    "latency_ms_p95": 1011.1
+  },
+  "ml_guess_accuracy_on_deferred": 0.7328767123287672,
+  "cascade": {
+    "accuracy": 0.957,
+    "big_share": 0.492
+  },
+  "classifier_only": {
+    "n": 1000,
+    "accuracy": 0.94,
+    "big_share": 0.485,
+    "parse_failures": 0,
+    "upgraded_low_confidence": 7,
+    "latency_ms_median": 941.75,
+    "latency_ms_p95": 1075.3
+  }
+}

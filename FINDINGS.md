@@ -227,6 +227,108 @@ as v1's dev set and is no longer a clean test for v1; one distillation run.
 `router_v0.joblib` is unchanged and `router.eval_1000` still scores it, so the
 published 92.6% reproduces. The app now loads `router_v1.joblib` by default.
 
+## 10. Deferral curve: the threshold as a knob, not a point
+
+Reproduce with `.venv/bin/python -m router.deferral_curve` (cached verdicts,
+no model calls). Sweeping the ML router's confidence threshold traces
+cascade accuracy against the share of queries deferred to the classifier,
+the standard way cascades are compared, with random and oracle deferral as
+baselines.
+
+![Deferral curve](docs/deferral_curve.svg)
+
+| Threshold | v1 deferred | v1 cascade | v0 deferred | v0 cascade |
+|---|---|---|---|---|
+| 0.50 (never defer) | 0.0% | 93.2% | 0.0% | 92.6% |
+| 0.60 | 8.8% | 95.7% | 6.5% | 94.5% |
+| **0.65 (shipped)** | **14.6%** | **95.8%** | 14.7% | 94.7% |
+| 0.70 | 24.6% | 95.5% | 24.2% | 95.4% |
+| 0.80 | 49.5% | 94.5% | 56.2% | 95.0% |
+| 1.00 (always defer) | 100% | 93.8% | 100% | 93.8% |
+
+Area under the curve (mean accuracy over 0–100% deferral): v1 0.947, v0
+0.946, random deferral 0.935, oracle deferral 0.968.
+
+- **More deferral is not better.** The cascade beats the classifier alone
+  (93.8%) at every threshold below ~0.95: on queries the ML router is sure
+  about, it is more often right than Gemma is. v1's curve peaks at 96.0%
+  around 12–13% deferred, next to the shipped 0.65 point.
+- **v1's advantage is all at low deferral.** Compared at the same deferral
+  share, v1 leads v0 by 1.0–1.1 points from 8% to 15% deferred (0.6–0.7
+  below that), they tie at 25%, and past that v0 is ahead by 0.2–0.6. The
+  areas are equal (0.947 vs 0.946). That fits §9: distillation improved
+  *which* queries the router is least sure about, not its overall ranking —
+  so v1 is the better router at the shipped operating point, not everywhere.
+- **The confidence score is the bottleneck.** An oracle that defers exactly
+  the queries the router gets wrong and the classifier gets right reaches
+  **96.9% while deferring only 3.7%**. Better uncertainty estimates would gain
+  more than a better classifier.
+- This is a diagnostic on the test set. The threshold stays at 0.65; picking
+  it from this curve would tune on Eval-1000.
+
+## 11. JEV vs Gemma vs the ML router
+
+[JEV](https://openrouter.ai/docs/guides/community/jev) (`typesafe/jev-1.14`,
+OpenRouter's Decisions API) is a small decision model: given a state and a
+`choice` question it returns a probability per option and a confidence. It
+was asked "small or big" for every Eval-1000 query, with the label definition
+from `router/seed_data.py` and the same "a confident small stays small" rule
+as Gemma. Nothing was tuned on Eval-1000. One run, 1,000 calls, 23 s, $0.018.
+Reproduce with `python -m router.jev_eval` (needs `OPENROUTER_API_KEY`), or
+rebuild the report from the saved verdicts with `--from-cache`.
+
+**As the routing classifier** (Gemma = the canonical run behind §8–10):
+
+| | JEV 1.14 | Gemma 4 E4B |
+|---|---|---|
+| Classifier alone, 1,000 queries | 91.5% | **93.8%** |
+| On the 146 queries router v1 defers on | 91.8% | 91.1% |
+| Cascade behind router v1 | 95.9% | 95.8% |
+| Median latency per call | **171 ms** (network) | ~930 ms (local, M5 Pro) |
+| Cost | $0.018 per 1,000 calls | $0 (local compute) |
+
+- Alone, Gemma is the better classifier: JEV fixes 16 of its errors and
+  makes 39 new ones (exact McNemar p = 0.003). 24 of JEV's extra errors are
+  conversational follow-ups, mostly sent to the large model.
+- Inside the cascade the choice washes out: 6 fixes vs 5 breaks (p = 1.0).
+  The router already settles 85% of traffic, and on the rest the two
+  classifiers are equally good. A second Gemma run (`data/classifier_verdicts_1000_run2.jsonl`)
+  gives the same picture: 94.0% alone, cascade 95.9% vs JEV's 95.9%.
+- So the trade-off is operational: JEV is ~5× faster per call and needs no
+  local GPU, costing about $0.003 per 1,000 user queries in the cascade;
+  Gemma is free per call and keeps queries on the machine.
+- Taking JEV's top choice without the confidence rule gives 96.2% in the
+  cascade (within noise) but 88.7% alone: the rule upgraded 96
+  low-confidence "small" verdicts. JEV's confidence is not the probability
+  of its choice, so the shared 0.75 cut may suit it less well than Gemma.
+
+**Against the ML router itself:**
+
+| Router | Accuracy (95% CI) | Where length misleads (n=103) | Time per query |
+|---|---|---|---|
+| ML router v1 | **93.2%** [0.916, 0.948] | 69.9% | **0.4 ms** |
+| ML router v0 | 92.6% [0.910, 0.943] | 52.4% | 0.1 ms |
+| JEV 1.14 | 91.5% [0.898, 0.933] | **79.6%** | 171 ms |
+
+- Overall the routers lead, but not significantly: v1 vs JEV 57 vs 40
+  (p = 0.10), v0 vs JEV 55 vs 44 (p = 0.32). They agree on 90%.
+- On the length counter-examples JEV is clearly better than v0 (33 vs 5,
+  p < 0.001) and edges v1 (16 vs 6, p = 0.052): it reads meaning where the
+  router leans on length. Distillation (§9) closed most of that gap
+  (52.4% → 69.9% vs JEV's 79.6%).
+- Where v1 and JEV disagree (97 queries), v1 is right 59% of the time and
+  its confidence is lower (median 0.69 vs 0.82 when they agree), so many of
+  those queries already reach the classifier.
+- As the front-line layer the ML router wins: putting JEV in its place
+  (JEV decides, Gemma takes JEV's low-confidence 20%) gives 93.0% against
+  95.9% for the shipped design. JEV's confidence is on a different scale,
+  so treat that swap as exploratory.
+
+The router belongs in front: it is at least as accurate, ~450× faster and
+free. JEV is a reasonable fallback classifier, strongest exactly where the
+router is weakest. As everywhere in this file, these are routing-label
+accuracies on a length-confounded benchmark, not answer quality.
+
 ## What this means
 
 The engineering is sound and the reported numbers are honest and reproducible.

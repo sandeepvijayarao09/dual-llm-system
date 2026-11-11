@@ -1,10 +1,14 @@
 """
-Train the v0 MLRouter on the seed dataset.
+Train an MLRouter with the v0 recipe on the seed dataset.
 
 Usage:
-    python -m router.train                    # train + save + print metrics
+    python -m router.train                    # → router/models/router_trained.joblib
     python -m router.train --out path.joblib  # custom output path
     python -m router.train --extra data.csv   # merge extra CSV (query,label)
+
+The committed router_v0.joblib (published numbers) and router_v1.joblib (the
+default, from router/refine.py) are never overwritten unless you pass --force.
+Point the app at a new model with ML_ROUTER_PATH.
 
 Extra CSV schema:
     query,label
@@ -33,7 +37,8 @@ from router.seed_data import load_seed
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 logger = logging.getLogger(__name__)
 
-DEFAULT_OUT = os.path.join("router", "models", "router_v0.joblib")
+DEFAULT_OUT = os.path.join("router", "models", "router_trained.joblib")
+PROTECTED = {"router_v0.joblib", "router_v1.joblib"}
 
 
 def _build_pipeline() -> Pipeline:
@@ -108,10 +113,14 @@ def train(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Train the v0 ML router.")
+    parser = argparse.ArgumentParser(description="Train an ML router (v0 recipe).")
     parser.add_argument("--out", default=DEFAULT_OUT, help="Output .joblib path")
     parser.add_argument("--extra", default=None, help="Extra CSV data to merge")
+    parser.add_argument("--force", action="store_true",
+                        help="allow overwriting the committed v0/v1 models")
     args = parser.parse_args()
+    if os.path.basename(args.out) in PROTECTED and not args.force:
+        parser.error(f"{args.out} is a committed model; pick another --out or pass --force")
 
     data = load_seed()
     if args.extra:

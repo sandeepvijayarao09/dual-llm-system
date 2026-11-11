@@ -9,9 +9,10 @@ from llm.providers import GeminiProvider, OllamaProvider, ProviderError, make_pr
 from llm.usage import track_usage
 
 
-def _ollama(handler) -> OllamaProvider:
+def _ollama(handler, sleeps=None) -> OllamaProvider:
     client = httpx.Client(base_url="http://ollama", transport=httpx.MockTransport(handler))
-    return OllamaProvider(base_url="http://ollama", timeout=5, client=client)
+    return OllamaProvider(base_url="http://ollama", timeout=5, client=client,
+                          sleep=(sleeps.append if sleeps is not None else lambda _s: None))
 
 
 def test_ollama_sends_system_first_and_records_usage():
@@ -52,6 +53,44 @@ def test_ollama_not_running_is_a_provider_error():
         raise httpx.ConnectError("connection refused", request=request)
     with pytest.raises(ProviderError, match="ollama serve"):
         _ollama(handler).complete("gemma4:e4b", "s", [{"role": "user", "content": "q"}], 10)
+
+
+def test_ollama_retries_transient_errors_with_backoff():
+    replies = iter([httpx.Response(503, text="busy"), httpx.Response(503, text="busy"),
+                    httpx.Response(200, json={"message": {"content": "ok"},
+                                              "prompt_eval_count": 1, "eval_count": 1})])
+    sleeps: list[float] = []
+    with track_usage() as ledger:
+        out = _ollama(lambda r: next(replies), sleeps).complete(
+            "gemma4:e4b", "s", [{"role": "user", "content": "q"}], 10)
+    assert out == "ok"
+    assert sleeps == [0.5, 1.0]                       # exponential backoff
+    assert len(ledger.calls) == 1 and ledger.calls[0].error is None
+
+
+def test_ollama_gives_up_after_the_last_attempt():
+    sleeps: list[float] = []
+    with pytest.raises(ProviderError, match="503"):
+        _ollama(lambda r: httpx.Response(503, text="busy"), sleeps).complete(
+            "gemma4:e4b", "s", [{"role": "user", "content": "q"}], 10)
+    assert len(sleeps) == 2
+
+
+def test_client_errors_are_not_retried():
+    calls = []
+    def handler(r):
+        calls.append(r)
+        return httpx.Response(400, text="bad request")
+    with pytest.raises(ProviderError):
+        _ollama(handler).complete("gemma4:e4b", "s", [{"role": "user", "content": "q"}], 10)
+    assert len(calls) == 1
+
+
+def test_gemini_client_gets_backoff_retries():
+    from llm.providers import gemini_http_options
+    opts = gemini_http_options(timeout=30)
+    assert opts.timeout == 30_000
+    assert opts.retry_options.attempts == 3 and 429 in opts.retry_options.http_status_codes
 
 
 class _Models:

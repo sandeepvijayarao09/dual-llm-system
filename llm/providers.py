@@ -28,6 +28,13 @@ logger = logging.getLogger(__name__)
 
 Message = dict[str, str]          # {"role": "user" | "assistant", "content": str}
 
+# Transient failures are retried with exponential backoff (0.5 s, 1 s, ...):
+# rate limits, server errors and dropped connections. Client errors (400,
+# 404 model-not-pulled) fail immediately.
+MAX_ATTEMPTS = 3
+RETRY_STATUS = (408, 429, 500, 502, 503, 504)
+BACKOFF_S = 0.5
+
 
 class ProviderError(RuntimeError):
     """A provider call failed (timeout, rate limit, API error, model missing)."""
@@ -55,8 +62,9 @@ class OllamaProvider:
     name = "ollama"
 
     def __init__(self, base_url: str, timeout: float, client: httpx.Client | None = None,
-                 **_: Any) -> None:
+                 sleep: Callable[[float], None] = time.sleep, **_: Any) -> None:
         self.client = client or httpx.Client(base_url=base_url, timeout=timeout)
+        self._sleep = sleep
 
     def complete(self, model, system, messages, max_tokens,
                  temperature=None, json_mode=False) -> str:
@@ -75,8 +83,7 @@ class OllamaProvider:
 
         started = time.perf_counter()
         try:
-            r = self.client.post("/api/chat", json=body)
-            r.raise_for_status()
+            r = self._post_with_retries(body)
         except httpx.HTTPStatusError as exc:
             record_call(model, started, error=f"HTTP{exc.response.status_code}")
             detail = exc.response.text[:200]
@@ -95,6 +102,27 @@ class OllamaProvider:
         )
         return (data.get("message", {}).get("content") or "").strip()
 
+    def _post_with_retries(self, body: dict) -> httpx.Response:
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            try:
+                r = self.client.post("/api/chat", json=body)
+                if r.status_code in RETRY_STATUS and attempt < MAX_ATTEMPTS:
+                    raise _Retry(f"HTTP {r.status_code}")
+                r.raise_for_status()
+                return r
+            except (_Retry, httpx.TransportError) as exc:
+                if attempt == MAX_ATTEMPTS:
+                    raise
+                delay = BACKOFF_S * 2 ** (attempt - 1)
+                logger.warning("Ollama %s; retry %d/%d in %.1fs", exc, attempt,
+                               MAX_ATTEMPTS - 1, delay)
+                self._sleep(delay)
+        raise AssertionError("unreachable")
+
+
+class _Retry(Exception):
+    """Internal: a retryable HTTP status."""
+
 
 # ── Gemini API ───────────────────────────────────────────────────────────────
 
@@ -112,10 +140,7 @@ class GeminiProvider:
     def __init__(self, api_key: str, timeout: float, client: Any = None, **_: Any) -> None:
         if client is None:
             from google import genai
-            client = genai.Client(
-                api_key=api_key or None,
-                http_options={"timeout": int(timeout * 1000)},   # milliseconds
-            )
+            client = genai.Client(api_key=api_key or None, http_options=gemini_http_options(timeout))
         self.client = client
 
     def complete(self, model, system, messages, max_tokens,
@@ -158,6 +183,19 @@ class GeminiProvider:
             cached_input_tokens=getattr(usage, "cached_content_token_count", 0) or 0,
         )
         return (response.text or "").strip()
+
+
+def gemini_http_options(timeout: float):
+    """Timeout (ms) plus the SDK's built-in exponential-backoff retries."""
+    from google.genai import types
+
+    return types.HttpOptions(
+        timeout=int(timeout * 1000),
+        retry_options=types.HttpRetryOptions(
+            attempts=MAX_ATTEMPTS, initial_delay=BACKOFF_S,
+            http_status_codes=list(RETRY_STATUS),
+        ),
+    )
 
 
 _PROVIDERS: dict[str, Callable[..., ChatProvider]] = {
