@@ -1,5 +1,5 @@
 """
-ContextAdder — runs on the Small LLM (GPT-4o Mini via OpenAI).
+ContextAdder — runs on the Small LLM (default: Gemma 4 E4B).
 
 Wraps the Large LLM's core answer with personalized context:
   - INTRO: a personalized framing before the answer

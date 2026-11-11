@@ -1,5 +1,5 @@
 """
-Large LLM client — the capable, expensive model (default: GPT-4o).
+Large LLM client — the capable, paid model (default: Gemini 3.8 Flash).
 
 Used for complex queries requiring deep reasoning.
 Personalization is handled via system prompt injection (user profile).

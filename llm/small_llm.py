@@ -1,5 +1,5 @@
 """
-Small LLM client — the cheap, fast model (default: GPT-4o Mini).
+Small LLM client — the cheap, fast model (default: Gemma 4 E4B, local).
 
 Used for:
   - Query classification / routing

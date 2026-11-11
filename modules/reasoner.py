@@ -1,5 +1,5 @@
 """
-Reasoner — runs on the Large LLM (GPT-4o via OpenAI API).
+Reasoner — runs on the Large LLM (default: Gemini 3.8 Flash).
 Used for complex queries that require deep reasoning.
 
 The Large LLM focuses on the core concept with a lightweight audience hint

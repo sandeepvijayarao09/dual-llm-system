@@ -32,20 +32,21 @@ from dataclasses import asdict, dataclass, field
 logger = logging.getLogger(__name__)
 
 # ── Price table ──────────────────────────────────────────────────────────────
-# USD per 1M tokens, provider list prices. Check https://openai.com/api/pricing
-# and https://claude.com/pricing before relying on the numbers, and bump
-# PRICES_AS_OF when you do. PRICES_AS_OF is the oldest check: the OpenAI rows
-# come from 2026-07 listings, the Claude rows from Anthropic's 2026-10 table.
-# Gemini models are not listed: add the ones you use through MODEL_PRICES_PATH
-# (until then they log cost_usd = NULL).
-PRICES_AS_OF = "2026-07"
+# USD per 1M tokens, Standard tier, prompts up to 200K tokens, from
+# https://ai.google.dev/gemini-api/docs/pricing (checked 2026-10-21; bump
+# PRICES_AS_OF when you re-check). Scheduled changes: gemini-3.8-flash doubles
+# to $1.50 / $7.50 on 2027-01-01; gemini-4-argon to $4 / $20 on 2026-12-01.
+# Local Ollama models and the free-tier-only Gemma 4 API models cost $0 per
+# token (local runs still cost compute; that isn't modelled).
+PRICES_AS_OF = "2026-10"
+_FREE = {"input": 0.0, "cached_input": 0.0, "output": 0.0}
 MODEL_PRICES: dict[str, dict[str, float]] = {
-    "gpt-4o":            {"input": 2.50, "cached_input": 1.25,  "output": 10.00},
-    "gpt-4o-mini":       {"input": 0.15, "cached_input": 0.075, "output": 0.60},
-    "claude-opus-5-5":   {"input": 4.00, "cached_input": 0.20,  "output": 20.00},
-    "claude-sonnet-5-5": {"input": 2.00, "cached_input": 0.20,  "output": 10.00},
-    # Haiku 5.5 prompts over 100K tokens bill at $0.50 / $2.50; not modelled here
-    "claude-haiku-5-5":  {"input": 0.10, "output": 0.50},
+    "gemini-3.8-flash":      {"input": 0.75, "cached_input": 0.075, "output": 3.75},
+    "gemini-4-argon":        {"input": 2.00, "cached_input": 0.10,  "output": 10.00},
+    "gemini-3.5-flash-lite": {"input": 0.30, "cached_input": 0.03,  "output": 2.50},
+    "gemma4":                _FREE,   # Ollama tags: gemma4:e4b, gemma4:e2b, ...
+    "gemma-4-31b-it":        _FREE,
+    "gemma-4-26b-a4b-it":    _FREE,
 }
 
 
@@ -64,12 +65,13 @@ _load_price_overrides()
 
 
 def price_for(model: str) -> dict[str, float] | None:
-    """Look up a model's prices; dated snapshots ("gpt-4o-2024-08-06") fall
-    back to their base name. Longest matching name wins, so gpt-4o-mini-*
-    never resolves to gpt-4o."""
+    """Look up a model's prices. Versioned names fall back to their base:
+    "gemini-3.8-flash-001" → gemini-3.8-flash, Ollama tags like
+    "gemma4:e4b-it-q4_K_M" → gemma4. Longest match wins, so a
+    gemini-3.8-flash-lite would never be priced as gemini-3.8-flash."""
     if model in MODEL_PRICES:
         return MODEL_PRICES[model]
-    matches = [m for m in MODEL_PRICES if model.startswith(m + "-")]
+    matches = [m for m in MODEL_PRICES if model.startswith((m + "-", m + ":"))]
     return MODEL_PRICES[max(matches, key=len)] if matches else None
 
 

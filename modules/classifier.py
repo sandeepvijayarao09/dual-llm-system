@@ -1,5 +1,5 @@
 """
-Classifier module — runs on the Small LLM (GPT-4o Mini via OpenAI).
+Classifier module — runs on the Small LLM (default: Gemma 4 E4B).
 
 Analyses the incoming query and returns a structured routing decision:
   {
