@@ -23,7 +23,11 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import time
+
 import pytest
+
+from llm.usage import record_call
 
 
 class FakeLLM:
@@ -59,10 +63,18 @@ class FakeLLM:
             "history": history, "max_tokens": max_tokens,
             "json_mode": json_mode,
         })
-        for predicate, response in self.scripts:
+        response = self.default_response
+        for predicate, scripted in self.scripts:
             if predicate(system, user_message):
-                return response
-        return self.default_response
+                response = scripted
+                break
+        # Report usage like the real clients do (word counts stand in for tokens).
+        record_call(
+            self.model, time.perf_counter(),
+            input_tokens=len(f"{system} {user_message}".split()),
+            output_tokens=len(response.split()),
+        )
+        return response
 
 
 @pytest.fixture

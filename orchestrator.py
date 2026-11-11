@@ -40,6 +40,7 @@ from config import (
 )
 from llm.small_llm import SmallLLM
 from llm.large_llm import LargeLLM
+from llm.usage import current_ledger, stage, track_usage
 from modules.classifier import Classifier
 from modules.answerer import SimpleAnswerer
 from modules.reasoner import Reasoner
@@ -63,6 +64,7 @@ class OrchestratorResponse:
     classification: dict = field(default_factory=dict)
     ml_prediction: dict = field(default_factory=dict)    # {decision, confidence, probs}
     latency_ms: float = 0.0
+    usage: dict = field(default_factory=dict)            # tokens / est. cost / per-call breakdown
     buffer_state: dict = field(default_factory=dict)
     prompts_sent: dict = field(default_factory=dict)     # exact prompts sent to each model
     error: str | None = None
@@ -153,7 +155,20 @@ class Orchestrator:
         ConversationBuffer is used for history (the `history` arg is ignored).
         If no `user_id` is provided, the orchestrator falls back to the passed
         `history` list (legacy behavior — kept for backwards compatibility).
+
+        Every LLM call made while answering is recorded in `resp.usage`
+        (tokens, latency, estimated USD) and in the routing log.
         """
+        with track_usage():
+            return self._process(query, history, user_profile, user_id)
+
+    def _process(
+        self,
+        query: str,
+        history: list[dict] | None,
+        user_profile: dict | None,
+        user_id: str | None,
+    ) -> OrchestratorResponse:
         if user_id and not user_profile:
             user_profile = self.profile_db.get(user_id)
 
@@ -178,7 +193,8 @@ class Orchestrator:
                 return resp
             if slash == "small":
                 logger.info("Slash override: /small — forcing Small LLM")
-                answer, prompt_debug = self.answerer.answer(query, effective_history, user_profile)
+                with stage("answerer"):
+                    answer, prompt_debug = self.answerer.answer(query, effective_history, user_profile)
                 resp = OrchestratorResponse(
                     answer=answer,
                     routing_decision="forced:small",
@@ -232,7 +248,8 @@ class Orchestrator:
 
             # ── Step 3: Dispatch ───────────────────────────────────────────
             if routing == "small":
-                answer, prompt_debug = self.answerer.answer(query, effective_history, effective_profile)
+                with stage("answerer"):
+                    answer, prompt_debug = self.answerer.answer(query, effective_history, effective_profile)
                 resp = OrchestratorResponse(
                     answer=answer,
                     routing_decision="small",
@@ -262,6 +279,7 @@ class Orchestrator:
                 model_used="none",
                 context_note="",
                 latency_ms=self._ms(start),
+                usage=self._usage_summary(),
                 error=str(exc),
             )
 
@@ -281,11 +299,13 @@ class Orchestrator:
 
         if self.ml_router is not None:
             try:
+                ml_start = time.perf_counter()
                 pred = self.ml_router.predict(query)
                 ml_pred = {
                     "decision": pred.decision,
                     "confidence": round(pred.confidence, 3),
                     "probs": {k: round(v, 3) for k, v in pred.probs.items()},
+                    "latency_ms": round((time.perf_counter() - ml_start) * 1000, 2),
                 }
                 logger.info(
                     "ML router: %s (conf=%.2f, probs=%s)",
@@ -301,7 +321,8 @@ class Orchestrator:
                 logger.warning("ML router failed (%s) — falling back to LLM classifier.", exc)
 
         # Fallback / cascade: LLM classifier
-        clf = self.classifier.classify(query)
+        with stage("classifier"):
+            clf = self.classifier.classify(query)
         logger.info(
             "LLM classifier: %s (complexity=%s, conf=%.2f, intent=%s)",
             clf.routing_decision, clf.complexity, clf.confidence, clf.intent,
@@ -339,14 +360,17 @@ class Orchestrator:
           4. Final = intro + core + closing
         """
         # Step 1: Large LLM — core reasoning with lightweight audience hint
-        core_answer, reasoner_prompt = self.reasoner.reason(query, history, user_profile=user_profile)
+        with stage("reasoner"):
+            core_answer, reasoner_prompt = self.reasoner.reason(query, history, user_profile=user_profile)
 
         # Step 2: Small LLM — 1-line summary
-        answer_summary = self.context_adder.summarize(core_answer)
+        with stage("summarizer"):
+            answer_summary = self.context_adder.summarize(core_answer)
         logger.debug("Answer summary: %s", answer_summary)
 
         # Step 3: Small LLM — personalized intro + closing
-        context = self.context_adder.add_context(query, user_profile, answer_summary)
+        with stage("personalizer"):
+            context = self.context_adder.add_context(query, user_profile, answer_summary)
         intro = context.get("intro", "")
         closing = context.get("closing", "")
 
@@ -401,8 +425,12 @@ class Orchestrator:
     ) -> None:
         """Record the turn in memory + log the routing decision for retraining."""
         if buffer is not None:
-            buffer.add_turn(query, resp.answer)
+            with stage("memory"):                 # may fold old turns into a summary
+                buffer.add_turn(query, resp.answer)
             resp.buffer_state = buffer.snapshot()
+
+        # Usage is final only now: the buffer above may have called the Small LLM.
+        resp.usage = self._usage_summary()
 
         self.routing_log.log(
             query=query,
@@ -413,6 +441,9 @@ class Orchestrator:
             llm_decision=resp.classification.get("routing_decision") if resp.classification else None,
             llm_confidence=resp.classification.get("confidence") if resp.classification else None,
             model_used=resp.model_used,
+            routed_by=resp.routed_by,
+            latency_ms=resp.latency_ms,
+            usage=resp.usage,
         )
 
     # ── Internals ─────────────────────────────────────────────────────────────
@@ -481,6 +512,11 @@ class Orchestrator:
             r"\bmy\s+info\b",
         ]
         return any(re.search(p, q) for p in SELF_REF_PATTERNS)
+
+    @staticmethod
+    def _usage_summary() -> dict:
+        ledger = current_ledger()
+        return ledger.summary() if ledger else {}
 
     @staticmethod
     def _ms(start: float) -> float:

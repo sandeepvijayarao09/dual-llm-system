@@ -95,6 +95,34 @@ a ~14% *strong-model dispatch* rate, so the two are easy to conflate.
   it does not, and the truth is the stronger claim.
 - Published confusion matrix (TP 438, FN 17, FP 57, TN 488) reproduces exactly.
 
+## 7. Estimated serving cost
+
+Reproduce with `.venv/bin/python -m router.cost_eval`. Each query is priced as
+the calls this system makes for it (big route: GPT-4o reasoner + GPT-4o-mini
+summarizer and personalizer; cascaded queries add one classifier call), using
+the real system prompts and list prices as of 2026-07. These are estimates:
+prompt tokens are characters/4, and answer lengths are fixed (150 small, 600
+big) because the eval has no model outputs.
+
+| Strategy | Accuracy | GPT-4o share | $ / 1k queries | vs always GPT-4o |
+|---|---|---|---|---|
+| Always GPT-4o | 45.5% | 100.0% | 6.41 | 100.0% |
+| Always GPT-4o-mini | 54.5% | 0.0% | 0.10 | 1.6% |
+| Word-count rule (≤8 words → small) | 89.7% | 46.8% | 3.06 | 47.8% |
+| CascadeRoute (ML decision) | 92.6% | 49.5% | 3.24 | 50.6% |
+| CascadeRoute, cascaded → big (bound) | 85.7% | 59.0% | 3.84 | 59.9% |
+| Oracle (perfect routing) | 100.0% | 45.5% | 2.98 | 46.5% |
+
+- Cost tracks the GPT-4o share almost exactly, as §5 argued: the 14.7%
+  cascade adds about $0.01 per 1k queries.
+- The router costs **2.8 points more** than the word-count rule for its 2.9
+  points of accuracy, and is 4.1 points above perfect routing.
+- The share barely moves with answer length (51.6% / 50.6% / 50.1% at 300 /
+  600 / 1,200 GPT-4o answer tokens).
+- Offline we don't know what the LLM classifier would decide for the 147
+  cascaded queries; the bound row sends them all to GPT-4o. Real traffic
+  settles this: `routing_log.db` now records measured tokens and cost per call.
+
 ## What this means
 
 The engineering is sound and the reported numbers are honest and reproducible.

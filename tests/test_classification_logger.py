@@ -1,6 +1,8 @@
 """Tests for router.classification_logger.ClassificationLogger."""
 
 import csv
+
+import pytest
 from router.classification_logger import ClassificationLogger
 
 
@@ -50,3 +52,53 @@ def test_export_all_final_decisions(tmp_path):
     out = tmp_path / "all.csv"
     n = log.export_labeled_csv(str(out), agreement_only=False)
     assert n == 2
+
+
+def test_usage_is_logged_per_query_and_per_call(tmp_path):
+    log = ClassificationLogger(str(tmp_path / "r.db"))
+    usage = {
+        "input_tokens": 300, "output_tokens": 80, "cached_input_tokens": 0,
+        "cost_usd": 0.0012,
+        "calls": [
+            {"stage": "reasoner", "model": "gpt-4o", "input_tokens": 200,
+             "output_tokens": 60, "cached_input_tokens": 0, "latency_ms": 900.0,
+             "cost_usd": 0.0011, "error": None},
+            {"stage": "personalizer", "model": "gpt-4o-mini", "input_tokens": 100,
+             "output_tokens": 20, "cached_input_tokens": 0, "latency_ms": 300.0,
+             "cost_usd": 0.0001, "error": None},
+        ],
+    }
+    log.log(query="Prove it", final_routing="big", routed_by="ml",
+            latency_ms=1250.0, usage=usage)
+    log.log(query="hi", final_routing="small", routed_by="ml",
+            latency_ms=200.0, usage={"input_tokens": 10, "output_tokens": 2,
+                                     "cost_usd": None, "calls": []})
+
+    with log._connect() as conn:
+        stages = [r["stage"] for r in conn.execute("SELECT stage FROM llm_calls")]
+    assert stages == ["reasoner", "personalizer"]
+
+    summary = log.cost_summary()
+    assert summary["queries"] == 2
+    assert summary["cost_usd"] == pytest.approx(0.0012)
+    assert summary["unpriced"] == 1
+    assert summary["by_route"]["big"]["input_tokens"] == 300
+
+
+def test_old_database_is_migrated(tmp_path):
+    import sqlite3
+    path = str(tmp_path / "old.db")
+    with sqlite3.connect(path) as conn:
+        conn.execute(
+            "CREATE TABLE routing_events (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "ts TEXT NOT NULL, user_id TEXT, query TEXT NOT NULL, ml_decision TEXT, "
+            "ml_confidence REAL, llm_decision TEXT, llm_confidence REAL, "
+            "final_routing TEXT NOT NULL, model_used TEXT)"
+        )
+        conn.execute("INSERT INTO routing_events (ts, query, final_routing) "
+                     "VALUES ('t', 'old row', 'small')")
+
+    log = ClassificationLogger(path)
+    log.log(query="new row", final_routing="small", usage={"cost_usd": 0.5})
+    assert log.count() == 2
+    assert log.cost_summary()["cost_usd"] == pytest.approx(0.5)

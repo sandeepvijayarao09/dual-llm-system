@@ -6,8 +6,10 @@ Personalization is handled via system prompt injection (user profile).
 """
 
 import logging
+import time
 
 from openai import OpenAI, APIError, APITimeoutError, RateLimitError
+from llm.usage import record_call, record_openai_response
 from config import OPENAI_API_KEY, LARGE_MODEL, LARGE_LLM_TIMEOUT
 
 logger = logging.getLogger(__name__)
@@ -53,17 +55,22 @@ class LargeLLM:
         if not is_reasoning:
             kwargs["temperature"] = 0.7
 
+        started = time.perf_counter()
         try:
             response = self.client.chat.completions.create(**kwargs)
+            record_openai_response(self.model, started, response)
             content = response.choices[0].message.content if response.choices else None
             return content.strip() if content else ""
         except APITimeoutError:
+            record_call(self.model, started, error="APITimeoutError")
             logger.error("Large LLM timed out after %ss", LARGE_LLM_TIMEOUT)
             raise
         except RateLimitError as exc:
+            record_call(self.model, started, error=type(exc).__name__)
             logger.error("Large LLM rate limited: %s", exc)
             raise
         except APIError as exc:
+            record_call(self.model, started, error=type(exc).__name__)
             logger.error("Large LLM API error: %s", exc)
             raise
 

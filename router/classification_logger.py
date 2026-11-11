@@ -17,13 +17,35 @@ Schema (single table):
         llm_decision   TEXT,       -- "small" | "big" | NULL
         llm_confidence REAL,
         final_routing  TEXT NOT NULL,
-        model_used     TEXT
+        model_used     TEXT,
+        routed_by      TEXT,       -- "ml" | "llm" | "pre-flight" | "slash"
+        latency_ms     REAL,       -- end-to-end, as seen by the user
+        input_tokens   INTEGER,    -- summed over every LLM call for the query
+        output_tokens  INTEGER,
+        cached_input_tokens INTEGER,
+        cost_usd       REAL        -- estimate; NULL if a model is unpriced
+    );
+
+    CREATE TABLE llm_calls (       -- one row per API request
+        event_id       INTEGER REFERENCES routing_events(id),
+        stage          TEXT,       -- "classifier" | "answerer" | "reasoner" | ...
+        model          TEXT,
+        input_tokens   INTEGER,
+        output_tokens  INTEGER,
+        cached_input_tokens INTEGER,
+        latency_ms     REAL,
+        cost_usd       REAL,
+        error          TEXT
     );
 
 Exporting training data:
     logger.export_labeled_csv("data.csv")
       → rows where ml_decision and llm_decision AGREE become high-confidence
         training labels (agreement is a proxy for correctness)
+
+Cost reporting:
+    logger.cost_summary()
+      → totals and per-route breakdown of tokens, estimated $ and latency
 """
 
 from __future__ import annotations
@@ -36,6 +58,17 @@ from datetime import datetime, timezone
 from typing import Optional
 
 logger = logging.getLogger(__name__)
+
+# Columns added after the first release; _init_db adds any that an older
+# routing_log.db is missing.
+_USAGE_COLUMNS = {
+    "routed_by": "TEXT",
+    "latency_ms": "REAL",
+    "input_tokens": "INTEGER",
+    "output_tokens": "INTEGER",
+    "cached_input_tokens": "INTEGER",
+    "cost_usd": "REAL",
+}
 
 
 class ClassificationLogger:
@@ -55,15 +88,22 @@ class ClassificationLogger:
         llm_decision: Optional[str] = None,
         llm_confidence: Optional[float] = None,
         model_used: Optional[str] = None,
+        routed_by: Optional[str] = None,
+        latency_ms: Optional[float] = None,
+        usage: Optional[dict] = None,
     ) -> None:
+        """`usage` is UsageLedger.summary(); its calls go to llm_calls."""
+        usage = usage or {}
         try:
             with self._connect() as conn:
-                conn.execute(
+                cur = conn.execute(
                     """
                     INSERT INTO routing_events
                     (ts, user_id, query, ml_decision, ml_confidence,
-                     llm_decision, llm_confidence, final_routing, model_used)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     llm_decision, llm_confidence, final_routing, model_used,
+                     routed_by, latency_ms, input_tokens, output_tokens,
+                     cached_input_tokens, cost_usd)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         datetime.now(timezone.utc).isoformat(),
@@ -75,7 +115,27 @@ class ClassificationLogger:
                         llm_confidence,
                         final_routing,
                         model_used,
+                        routed_by,
+                        latency_ms,
+                        usage.get("input_tokens"),
+                        usage.get("output_tokens"),
+                        usage.get("cached_input_tokens"),
+                        usage.get("cost_usd"),
                     ),
+                )
+                conn.executemany(
+                    """
+                    INSERT INTO llm_calls
+                    (event_id, stage, model, input_tokens, output_tokens,
+                     cached_input_tokens, latency_ms, cost_usd, error)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    [
+                        (cur.lastrowid, c["stage"], c["model"], c["input_tokens"],
+                         c["output_tokens"], c["cached_input_tokens"],
+                         c["latency_ms"], c["cost_usd"], c["error"])
+                        for c in usage.get("calls", [])
+                    ],
                 )
         except sqlite3.Error as exc:                    # pragma: no cover
             logger.warning("Routing log write failed: %s", exc)
@@ -117,6 +177,32 @@ class ClassificationLogger:
             writer.writerows(kept)
         return len(kept)
 
+    def cost_summary(self) -> dict:
+        """
+        Totals plus a per-route breakdown over every logged query:
+            {"queries", "cost_usd", "input_tokens", "output_tokens",
+             "avg_latency_ms", "by_route": {route: {...same keys...}}}
+        cost_usd sums only priced rows; "unpriced" counts the rest.
+        """
+        select = """
+            COUNT(*)                          AS queries,
+            SUM(cost_usd)                     AS cost_usd,
+            SUM(cost_usd IS NULL)             AS unpriced,
+            COALESCE(SUM(input_tokens), 0)    AS input_tokens,
+            COALESCE(SUM(output_tokens), 0)   AS output_tokens,
+            AVG(latency_ms)                   AS avg_latency_ms
+        """
+        with self._connect() as conn:
+            total = dict(conn.execute(f"SELECT {select} FROM routing_events").fetchone())
+            rows = conn.execute(
+                f"SELECT final_routing, {select} FROM routing_events GROUP BY final_routing"
+            ).fetchall()
+        total["by_route"] = {
+            r["final_routing"]: {k: r[k] for k in r.keys() if k != "final_routing"}
+            for r in rows
+        }
+        return total
+
     def count(self) -> int:
         with self._connect() as conn:
             row = conn.execute("SELECT COUNT(*) FROM routing_events").fetchone()
@@ -139,6 +225,25 @@ class ClassificationLogger:
                     llm_confidence REAL,
                     final_routing  TEXT NOT NULL,
                     model_used     TEXT
+                )
+                """
+            )
+            existing = {r["name"] for r in conn.execute("PRAGMA table_info(routing_events)")}
+            for col, typ in _USAGE_COLUMNS.items():
+                if col not in existing:
+                    conn.execute(f"ALTER TABLE routing_events ADD COLUMN {col} {typ}")
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS llm_calls (
+                    event_id            INTEGER REFERENCES routing_events(id),
+                    stage               TEXT,
+                    model               TEXT,
+                    input_tokens        INTEGER,
+                    output_tokens       INTEGER,
+                    cached_input_tokens INTEGER,
+                    latency_ms          REAL,
+                    cost_usd            REAL,
+                    error               TEXT
                 )
                 """
             )
