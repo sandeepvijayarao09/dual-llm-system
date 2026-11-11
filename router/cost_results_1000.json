@@ -33,17 +33,17 @@
     },
     {
       "strategy": "Cascade router (ML decision)",
-      "accuracy": 0.926,
+      "accuracy": 0.932,
       "large_share": 0.495,
-      "cost_per_1k": 1.1455305,
-      "vs_always_large": 0.49582257339347535
+      "cost_per_1k": 1.1454975,
+      "vs_always_large": 0.49580828992837167
     },
     {
       "strategy": "Cascade router (cascaded -> big, bound)",
-      "accuracy": 0.857,
-      "large_share": 0.59,
-      "cost_per_1k": 1.364766,
-      "vs_always_large": 0.5907147738099682
+      "accuracy": 0.87,
+      "large_share": 0.583,
+      "cost_per_1k": 1.34864025,
+      "vs_always_large": 0.5837350287373579
     },
     {
       "strategy": "Oracle (ground-truth labels)",
@@ -54,8 +54,8 @@
     }
   ],
   "cascade_share_by_big_out": {
-    "300": 0.49660325786071996,
-    "600": 0.49582257339347535,
-    "1200": 0.49541673073776193
+    "300": 0.4965754183051405,
+    "600": 0.49580828992837167,
+    "1200": 0.49540949447289157
   }
 }

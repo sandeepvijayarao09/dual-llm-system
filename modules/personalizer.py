@@ -44,6 +44,7 @@ Rules:
 - Do NOT repeat or summarise the main answer
 - Do NOT answer the question yourself
 - Keep both sections short and personal
+- Use ONLY facts present in the profile; never invent details about the user
 - Output ONLY in the format above, nothing else"""
 
 

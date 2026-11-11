@@ -174,10 +174,58 @@ the orchestrator's confidence rule, and also runs the classifier alone on all
 - The large-model rate (49.8%) matches the offline estimate, so §7a's cost
   figure (~49.6% of always-Gemini) holds.
 
-Caveats: one run at temperature 0.1, so expect small run-to-run variation;
+A second full run reproduced both accuracies exactly (94.7%, 93.8%); the
+classifier-only large-model rate moved 48.3% → 48.5%, and the committed
+`router/live_cascade_results.json` is from that second run.
+
+Caveats: temperature 0.1, so expect small run-to-run variation;
 the CIs are binomial bootstrap on the accuracy, not paired tests; and the
 benchmark is still the length-confounded one from §4 — an LLM classifier can
 read length too. This is routing accuracy, not answer quality.
+
+## 9. Router v1: distilling the classifier into the router
+
+Reproduce with `.venv/bin/python -m router.refine --select` (the distilled
+data is committed; regenerate it with `python -m router.distill`, local Gemma).
+Eval-1000 was used once, to score choices fixed in advance:
+
+1. **Hyperparameters** were picked by 5×5-fold CV on the 239 seed examples
+   (word unigrams + character 2–5-grams). This alone did not help: CV
+   accuracy rose 0.936 → 0.947 and log-loss halved, but on Eval-1000 the
+   seed-only v1 scored 92.3% and became overconfident (defers 5.4%), so its
+   cascade fell to 93.7%.
+2. **Distillation.** Local Gemma wrote 1,199 new queries over 30 topics,
+   deliberately *short-but-hard* and *long-but-easy* — the cases the length
+   shortcut gets wrong — and the Gemma classifier labelled them. None
+   duplicated or closely paraphrased an Eval-1000 or seed query.
+3. **Weighting.** At full weight these counter-examples swamp the seed set
+   (cascade 90.8%). Their weight (0.1) and C (2) were chosen on a dev set,
+   Eval-500 minus its overlaps with Eval-1000 and the seed data (438 queries).
+
+| Router | ML alone | Deferred | Cascade | 95% CI | Large-model rate | Where length misleads (n=103) |
+|---|---|---|---|---|---|---|
+| v0 (published) | 92.6% | 14.7% | 94.7% | [0.933, 0.961] | 49.8% | 68.0% |
+| v1, seed only | 92.3% | 5.4% | 93.7% | [0.922, 0.952] | 51.2% | 61.2% |
+| v1, + distilled at weight 1.0 | 88.7% | 9.3% | 90.8% | [0.890, 0.926] | 51.3% | 75.7% |
+| **v1, + distilled at weight 0.1** | **93.2%** | 14.6% | **95.8%** | [0.946, 0.970] | 49.1% | **79.6%** |
+
+Cascade figures use the cached Gemma 4 E4B verdicts
+(`data/classifier_verdicts_1000.jsonl`) at the unchanged 0.65 threshold.
+
+- Paired on the same 1,000 queries, v1's cascade fixes 12 of v0's errors and
+  introduces 1 (exact McNemar p = 0.003). All 12 fixes are among the 103
+  queries where the word-count rule is wrong, and none of those regress.
+- The ML router alone is +0.6 points (fixes 19, breaks 13; p = 0.38): not
+  significant. The gain is in *what reaches the classifier*, not in the
+  router's own accuracy.
+- v1 sends slightly less to the large model (49.1% vs 49.8%), so it is not
+  buying accuracy with cost.
+
+Caveats: the distilled labels come from the same Gemma classifier the cascade
+falls back to, so v1 is partly learning to agree with it; Eval-500 now serves
+as v1's dev set and is no longer a clean test for v1; one distillation run.
+`router_v0.joblib` is unchanged and `router.eval_1000` still scores it, so the
+published 92.6% reproduces. The app now loads `router_v1.joblib` by default.
 
 ## What this means
 

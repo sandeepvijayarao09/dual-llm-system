@@ -2,7 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import { normalizeMathDelimiters } from "../lib/math";
 import type { ChatEntry } from "./types";
 import AnswerMeta from "./AnswerMeta";
 
@@ -47,7 +50,9 @@ export default function MessageList({ messages, pending }: { messages: ChatEntry
           return (
             <article key={m.id} className="min-w-0">
               <div className="prose-answer text-[15px]">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                  {normalizeMathDelimiters(m.content)}
+                </ReactMarkdown>
               </div>
               <AnswerMeta response={m.response} />
             </article>

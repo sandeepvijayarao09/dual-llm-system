@@ -32,6 +32,9 @@ from router.eval_data import load_cases
 from router.ml_router import MLRouter
 
 RESULTS_PATH = os.path.join(os.path.dirname(__file__), "live_cascade_results.json")
+# Per-query classifier verdicts from --all, so any router's cascade can be
+# scored offline (router/refine.py) without re-asking the model.
+VERDICTS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "classifier_verdicts_1000.jsonl")
 
 
 def final_route(clf) -> str:
@@ -129,10 +132,16 @@ def main() -> None:
         print("\nLLM classifier alone on all 1000 queries:")
         all_rows = classify_all(classifier, [q for q, _, _ in cases], "all")
         result["classifier_only"] = summarize(all_rows, truth)
+        with open(VERDICTS_PATH, "w", encoding="utf-8") as f:
+            for r in all_rows:
+                f.write(json.dumps({k: r[k] for k in (
+                    "query", "llm_decision", "llm_confidence", "parsed", "final")}) + "\n")
         s = result["classifier_only"]
         print(f"  accuracy {s['accuracy']:.1%}, large {s['big_share']:.1%}, "
               f"parse failures {s['parse_failures']}, median {s['latency_ms_median']:.0f} ms")
 
+    if args.all:
+        print(f"Per-query verdicts saved to {os.path.normpath(VERDICTS_PATH)}")
     print(f"\nWall time: {time.time() - started:.0f} s")
     with open(RESULTS_PATH, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)

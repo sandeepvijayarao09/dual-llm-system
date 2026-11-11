@@ -1,0 +1,58 @@
+{
+  "word_rule_accuracy": 0.897,
+  "n_distilled": 1199,
+  "results": [
+    {
+      "router": "v0 (published)",
+      "ml_accuracy": 0.926,
+      "deferred_share": 0.147,
+      "cascade_accuracy": 0.947,
+      "cascade_ci": [
+        0.933,
+        0.961
+      ],
+      "large_share": 0.498,
+      "cascade_acc_where_length_rule_wrong": 0.6796116504854369,
+      "n_length_rule_wrong": 103
+    },
+    {
+      "router": "v1, seed only",
+      "ml_accuracy": 0.923,
+      "deferred_share": 0.054,
+      "cascade_accuracy": 0.937,
+      "cascade_ci": [
+        0.922,
+        0.952
+      ],
+      "large_share": 0.512,
+      "cascade_acc_where_length_rule_wrong": 0.6116504854368932,
+      "n_length_rule_wrong": 103
+    },
+    {
+      "router": "v1, + distilled @1.0",
+      "ml_accuracy": 0.887,
+      "deferred_share": 0.093,
+      "cascade_accuracy": 0.908,
+      "cascade_ci": [
+        0.89,
+        0.926
+      ],
+      "large_share": 0.513,
+      "cascade_acc_where_length_rule_wrong": 0.7572815533980582,
+      "n_length_rule_wrong": 103
+    },
+    {
+      "router": "v1, + distilled @0.1",
+      "ml_accuracy": 0.932,
+      "deferred_share": 0.146,
+      "cascade_accuracy": 0.958,
+      "cascade_ci": [
+        0.946,
+        0.97
+      ],
+      "large_share": 0.491,
+      "cascade_acc_where_length_rule_wrong": 0.7961165048543689,
+      "n_length_rule_wrong": 103
+    }
+  ]
+}

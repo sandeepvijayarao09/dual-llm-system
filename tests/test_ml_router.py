@@ -91,3 +91,17 @@ def test_existing_v0_model_on_disk_loads():
     r = MLRouter.load(path)
     pred = r.predict("Prove sqrt 2 is irrational.")
     assert pred.decision in {"small", "big"}
+
+
+def test_committed_v1_model_routes_the_obvious_cases():
+    """router_v1.joblib (router/refine.py) is the app's default router."""
+    import os
+
+    from router.ml_router import MLRouter
+
+    path = os.path.join(os.path.dirname(__file__), "..", "router", "models", "router_v1.joblib")
+    router = MLRouter.load(path)
+    assert router.predict("Hi there!").decision == "small"
+    assert router.predict("Prove that the square root of 2 is irrational.").decision == "big"
+    # Short but hard — the length shortcut alone would say "small"
+    assert router.predict("Design a distributed rate limiter.").decision == "big"
