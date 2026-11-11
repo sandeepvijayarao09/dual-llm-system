@@ -1,0 +1,50 @@
+[
+  {
+    "user_id": "cs_student",
+    "label": "Alex — CS College Student",
+    "emoji": "🎓",
+    "profile": {
+      "name": "Alex",
+      "expertise": "intermediate",
+      "tone": "casual",
+      "domain": "Computer Science",
+      "interests": ["algorithms", "machine learning", "web development"],
+      "preferred_format": "bullets",
+      "background": "Third-year computer science undergraduate who knows Python and data structures and is starting to learn ML."
+    }
+  },
+  {
+    "user_id": "nasa_engineer",
+    "label": "Dr. Sarah Chen — NASA Engineer",
+    "emoji": "🚀",
+    "profile": {
+      "name": "Dr. Sarah Chen",
+      "expertise": "expert",
+      "tone": "technical",
+      "domain": "Aerospace / Embedded Systems",
+      "interests": ["flight software", "real-time systems", "control theory"],
+      "preferred_format": "prose",
+      "background": "Senior flight-software engineer with a PhD, working on embedded control systems for spacecraft."
+    }
+  },
+  {
+    "user_id": "high_school",
+    "label": "Jordan — High School Student",
+    "emoji": "📚",
+    "profile": {
+      "name": "Jordan",
+      "expertise": "novice",
+      "tone": "casual",
+      "domain": "High School / General",
+      "interests": ["physics", "video games"],
+      "preferred_format": "plain",
+      "background": "High-school junior who is curious about science and new to programming."
+    }
+  },
+  {
+    "user_id": "guest",
+    "label": "Guest (blank profile)",
+    "emoji": "👤",
+    "profile": null
+  }
+]

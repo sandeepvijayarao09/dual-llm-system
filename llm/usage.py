@@ -24,20 +24,28 @@ import json
 import logging
 import os
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import asdict, dataclass, field
-from typing import Iterator, Optional
 
 logger = logging.getLogger(__name__)
 
 # ── Price table ──────────────────────────────────────────────────────────────
-# USD per 1M tokens, OpenAI list prices. Check https://openai.com/api/pricing
-# before relying on the numbers; bump PRICES_AS_OF when you do.
+# USD per 1M tokens, provider list prices. Check https://openai.com/api/pricing
+# and https://claude.com/pricing before relying on the numbers, and bump
+# PRICES_AS_OF when you do. PRICES_AS_OF is the oldest check: the OpenAI rows
+# come from 2026-07 listings, the Claude rows from Anthropic's 2026-10 table.
+# Gemini models are not listed: add the ones you use through MODEL_PRICES_PATH
+# (until then they log cost_usd = NULL).
 PRICES_AS_OF = "2026-07"
 MODEL_PRICES: dict[str, dict[str, float]] = {
-    "gpt-4o":      {"input": 2.50, "cached_input": 1.25,  "output": 10.00},
-    "gpt-4o-mini": {"input": 0.15, "cached_input": 0.075, "output": 0.60},
+    "gpt-4o":            {"input": 2.50, "cached_input": 1.25,  "output": 10.00},
+    "gpt-4o-mini":       {"input": 0.15, "cached_input": 0.075, "output": 0.60},
+    "claude-opus-5-5":   {"input": 4.00, "cached_input": 0.20,  "output": 20.00},
+    "claude-sonnet-5-5": {"input": 2.00, "cached_input": 0.20,  "output": 10.00},
+    # Haiku 5.5 prompts over 100K tokens bill at $0.50 / $2.50; not modelled here
+    "claude-haiku-5-5":  {"input": 0.10, "output": 0.50},
 }
 
 
@@ -55,7 +63,7 @@ def _load_price_overrides() -> None:
 _load_price_overrides()
 
 
-def price_for(model: str) -> Optional[dict[str, float]]:
+def price_for(model: str) -> dict[str, float] | None:
     """Look up a model's prices; dated snapshots ("gpt-4o-2024-08-06") fall
     back to their base name. Longest matching name wins, so gpt-4o-mini-*
     never resolves to gpt-4o."""
@@ -70,7 +78,7 @@ def estimate_cost(
     input_tokens: int,
     output_tokens: int,
     cached_input_tokens: int = 0,
-) -> Optional[float]:
+) -> float | None:
     """Estimated USD for one call, or None when the model has no price."""
     p = price_for(model)
     if p is None:
@@ -93,8 +101,8 @@ class LLMCall:
     output_tokens: int = 0
     cached_input_tokens: int = 0
     latency_ms: float = 0.0
-    cost_usd: Optional[float] = None
-    error: Optional[str] = None  # exception class name when the call failed
+    cost_usd: float | None = None
+    error: str | None = None  # exception class name when the call failed
 
 
 @dataclass
@@ -114,7 +122,7 @@ class UsageLedger:
         return sum(c.cached_input_tokens for c in self.calls)
 
     @property
-    def cost_usd(self) -> Optional[float]:
+    def cost_usd(self) -> float | None:
         """Total estimated cost; None if any call's model is unpriced, so a
         partial sum is never shown as the full cost."""
         costs = [c.cost_usd for c in self.calls]
@@ -135,7 +143,7 @@ class UsageLedger:
         }
 
 
-_ledger: ContextVar[Optional[UsageLedger]] = ContextVar("usage_ledger", default=None)
+_ledger: ContextVar[UsageLedger | None] = ContextVar("usage_ledger", default=None)
 _stage: ContextVar[str] = ContextVar("usage_stage", default="unlabelled")
 
 
@@ -150,7 +158,7 @@ def track_usage() -> Iterator[UsageLedger]:
         _ledger.reset(token)
 
 
-def current_ledger() -> Optional[UsageLedger]:
+def current_ledger() -> UsageLedger | None:
     """The ledger of the query being processed, if any."""
     return _ledger.get()
 
@@ -171,7 +179,7 @@ def record_call(
     input_tokens: int = 0,
     output_tokens: int = 0,
     cached_input_tokens: int = 0,
-    error: Optional[str] = None,
+    error: str | None = None,
 ) -> None:
     """Append one call to the active ledger (no-op outside track_usage).
     `started` is the time.perf_counter() value taken before the request."""
@@ -189,16 +197,3 @@ def record_call(
             model, input_tokens, output_tokens, cached_input_tokens),
         error=error,
     ))
-
-
-def record_openai_response(model: str, started: float, response) -> None:
-    """Record a chat.completions response, reading its `usage` block."""
-    usage = getattr(response, "usage", None)
-    details = getattr(usage, "prompt_tokens_details", None)
-    record_call(
-        model=getattr(response, "model", None) or model,
-        started=started,
-        input_tokens=getattr(usage, "prompt_tokens", 0) or 0,
-        output_tokens=getattr(usage, "completion_tokens", 0) or 0,
-        cached_input_tokens=getattr(details, "cached_tokens", 0) or 0,
-    )

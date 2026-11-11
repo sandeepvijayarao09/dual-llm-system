@@ -1,42 +1,14 @@
 """
-ClassificationLogger — append-only SQLite log of every routing decision.
+ClassificationLogger — append-only log of every routing decision.
 
 Purpose:
     Capture real-world (query, ml_prediction, llm_prediction, final_decision,
     model_used) tuples during production so we can periodically retrain the
     MLRouter on *your users' actual traffic*, not just the seed set.
 
-Schema (single table):
-    CREATE TABLE routing_events (
-        id             INTEGER PRIMARY KEY AUTOINCREMENT,
-        ts             TEXT NOT NULL,
-        user_id        TEXT,
-        query          TEXT NOT NULL,
-        ml_decision    TEXT,       -- "small" | "big" | NULL
-        ml_confidence  REAL,
-        llm_decision   TEXT,       -- "small" | "big" | NULL
-        llm_confidence REAL,
-        final_routing  TEXT NOT NULL,
-        model_used     TEXT,
-        routed_by      TEXT,       -- "ml" | "llm" | "pre-flight" | "slash"
-        latency_ms     REAL,       -- end-to-end, as seen by the user
-        input_tokens   INTEGER,    -- summed over every LLM call for the query
-        output_tokens  INTEGER,
-        cached_input_tokens INTEGER,
-        cost_usd       REAL        -- estimate; NULL if a model is unpriced
-    );
-
-    CREATE TABLE llm_calls (       -- one row per API request
-        event_id       INTEGER REFERENCES routing_events(id),
-        stage          TEXT,       -- "classifier" | "answerer" | "reasoner" | ...
-        model          TEXT,
-        input_tokens   INTEGER,
-        output_tokens  INTEGER,
-        cached_input_tokens INTEGER,
-        latency_ms     REAL,
-        cost_usd       REAL,
-        error          TEXT
-    );
+Schema: `routing_events` (one row per query, with summed tokens, estimated
+cost and latency) and `llm_calls` (one row per API request), defined in
+db/engine.py. Stored in ROUTING_LOG_PATH (SQLite) or DATABASE_URL.
 
 Exporting training data:
     logger.export_labeled_csv("data.csv")
@@ -53,28 +25,24 @@ from __future__ import annotations
 import csv
 import logging
 import os
-import sqlite3
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
+
+from sqlalchemy import func, insert, select
+from sqlalchemy.exc import SQLAlchemyError
+
+from db.engine import database_url, get_engine, llm_calls, routing_events
 
 logger = logging.getLogger(__name__)
 
-# Columns added after the first release; _init_db adds any that an older
-# routing_log.db is missing.
-_USAGE_COLUMNS = {
-    "routed_by": "TEXT",
-    "latency_ms": "REAL",
-    "input_tokens": "INTEGER",
-    "output_tokens": "INTEGER",
-    "cached_input_tokens": "INTEGER",
-    "cost_usd": "REAL",
-}
+_CALL_FIELDS = ("stage", "model", "input_tokens", "output_tokens",
+                "cached_input_tokens", "latency_ms", "cost_usd", "error")
 
 
 class ClassificationLogger:
     def __init__(self, db_path: str = "routing_log.db"):
+        """`db_path` is a SQLite file path or any SQLAlchemy URL."""
         self.db_path = db_path
-        self._init_db()
+        self.engine = get_engine(database_url(db_path))
 
     # ── Write ─────────────────────────────────────────────────────────────────
 
@@ -82,62 +50,47 @@ class ClassificationLogger:
         self,
         query: str,
         final_routing: str,
-        user_id: Optional[str] = None,
-        ml_decision: Optional[str] = None,
-        ml_confidence: Optional[float] = None,
-        llm_decision: Optional[str] = None,
-        llm_confidence: Optional[float] = None,
-        model_used: Optional[str] = None,
-        routed_by: Optional[str] = None,
-        latency_ms: Optional[float] = None,
-        usage: Optional[dict] = None,
+        user_id: str | None = None,
+        ml_decision: str | None = None,
+        ml_confidence: float | None = None,
+        llm_decision: str | None = None,
+        llm_confidence: float | None = None,
+        model_used: str | None = None,
+        routed_by: str | None = None,
+        latency_ms: float | None = None,
+        usage: dict | None = None,
     ) -> None:
         """`usage` is UsageLedger.summary(); its calls go to llm_calls."""
         usage = usage or {}
         try:
-            with self._connect() as conn:
-                cur = conn.execute(
-                    """
-                    INSERT INTO routing_events
-                    (ts, user_id, query, ml_decision, ml_confidence,
-                     llm_decision, llm_confidence, final_routing, model_used,
-                     routed_by, latency_ms, input_tokens, output_tokens,
-                     cached_input_tokens, cost_usd)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        datetime.now(timezone.utc).isoformat(),
-                        user_id,
-                        query,
-                        ml_decision,
-                        ml_confidence,
-                        llm_decision,
-                        llm_confidence,
-                        final_routing,
-                        model_used,
-                        routed_by,
-                        latency_ms,
-                        usage.get("input_tokens"),
-                        usage.get("output_tokens"),
-                        usage.get("cached_input_tokens"),
-                        usage.get("cost_usd"),
-                    ),
+            with self.engine.begin() as conn:
+                result = conn.execute(
+                    insert(routing_events).values(
+                        ts=datetime.now(UTC).isoformat(),
+                        user_id=user_id,
+                        query=query,
+                        ml_decision=ml_decision,
+                        ml_confidence=ml_confidence,
+                        llm_decision=llm_decision,
+                        llm_confidence=llm_confidence,
+                        final_routing=final_routing,
+                        model_used=model_used,
+                        routed_by=routed_by,
+                        latency_ms=latency_ms,
+                        input_tokens=usage.get("input_tokens"),
+                        output_tokens=usage.get("output_tokens"),
+                        cached_input_tokens=usage.get("cached_input_tokens"),
+                        cost_usd=usage.get("cost_usd"),
+                    )
                 )
-                conn.executemany(
-                    """
-                    INSERT INTO llm_calls
-                    (event_id, stage, model, input_tokens, output_tokens,
-                     cached_input_tokens, latency_ms, cost_usd, error)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    [
-                        (cur.lastrowid, c["stage"], c["model"], c["input_tokens"],
-                         c["output_tokens"], c["cached_input_tokens"],
-                         c["latency_ms"], c["cost_usd"], c["error"])
-                        for c in usage.get("calls", [])
-                    ],
-                )
-        except sqlite3.Error as exc:                    # pragma: no cover
+                event_id = result.inserted_primary_key[0] if result.inserted_primary_key else None
+                calls = usage.get("calls", [])
+                if calls:
+                    conn.execute(insert(llm_calls), [
+                        {"event_id": event_id, **{k: c.get(k) for k in _CALL_FIELDS}}
+                        for c in calls
+                    ])
+        except SQLAlchemyError as exc:                  # pragma: no cover
             logger.warning("Routing log write failed: %s", exc)
 
     # ── Read / export ────────────────────────────────────────────────────────
@@ -150,14 +103,11 @@ class ClassificationLogger:
         and LLM classifier agreed — those are our highest-quality labels.
         Returns number of rows written.
         """
-        with self._connect() as conn:
-            cursor = conn.execute(
-                """
-                SELECT query, ml_decision, llm_decision, final_routing
-                FROM routing_events
-                """
-            )
-            rows = cursor.fetchall()
+        t = routing_events.c
+        with self.engine.connect() as conn:
+            rows = conn.execute(
+                select(t.query, t.ml_decision, t.llm_decision, t.final_routing)
+            ).mappings().all()
 
         kept: list[tuple[str, str]] = []
         for row in rows:
@@ -180,75 +130,35 @@ class ClassificationLogger:
     def cost_summary(self) -> dict:
         """
         Totals plus a per-route breakdown over every logged query:
-            {"queries", "cost_usd", "input_tokens", "output_tokens",
+            {"queries", "cost_usd", "unpriced", "input_tokens", "output_tokens",
              "avg_latency_ms", "by_route": {route: {...same keys...}}}
         cost_usd sums only priced rows; "unpriced" counts the rest.
         """
-        select = """
-            COUNT(*)                          AS queries,
-            SUM(cost_usd)                     AS cost_usd,
-            SUM(cost_usd IS NULL)             AS unpriced,
-            COALESCE(SUM(input_tokens), 0)    AS input_tokens,
-            COALESCE(SUM(output_tokens), 0)   AS output_tokens,
-            AVG(latency_ms)                   AS avg_latency_ms
-        """
-        with self._connect() as conn:
-            total = dict(conn.execute(f"SELECT {select} FROM routing_events").fetchone())
+        t = routing_events.c
+        cols = [
+            func.count().label("queries"),
+            func.sum(t.cost_usd).label("cost_usd"),
+            (func.count() - func.count(t.cost_usd)).label("unpriced"),
+            func.coalesce(func.sum(t.input_tokens), 0).label("input_tokens"),
+            func.coalesce(func.sum(t.output_tokens), 0).label("output_tokens"),
+            func.avg(t.latency_ms).label("avg_latency_ms"),
+        ]
+        with self.engine.connect() as conn:
+            total = dict(conn.execute(select(*cols)).mappings().one())
             rows = conn.execute(
-                f"SELECT final_routing, {select} FROM routing_events GROUP BY final_routing"
-            ).fetchall()
+                select(t.final_routing, *cols).group_by(t.final_routing)
+            ).mappings().all()
         total["by_route"] = {
-            r["final_routing"]: {k: r[k] for k in r.keys() if k != "final_routing"}
+            r["final_routing"]: {k: v for k, v in r.items() if k != "final_routing"}
             for r in rows
         }
         return total
 
+    def calls(self) -> list[dict]:
+        """Every recorded LLM call, oldest first."""
+        with self.engine.connect() as conn:
+            return [dict(r) for r in conn.execute(select(llm_calls)).mappings()]
+
     def count(self) -> int:
-        with self._connect() as conn:
-            row = conn.execute("SELECT COUNT(*) FROM routing_events").fetchone()
-        return row[0] if row else 0
-
-    # ── Internals ────────────────────────────────────────────────────────────
-
-    def _init_db(self) -> None:
-        with self._connect() as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS routing_events (
-                    id             INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ts             TEXT NOT NULL,
-                    user_id        TEXT,
-                    query          TEXT NOT NULL,
-                    ml_decision    TEXT,
-                    ml_confidence  REAL,
-                    llm_decision   TEXT,
-                    llm_confidence REAL,
-                    final_routing  TEXT NOT NULL,
-                    model_used     TEXT
-                )
-                """
-            )
-            existing = {r["name"] for r in conn.execute("PRAGMA table_info(routing_events)")}
-            for col, typ in _USAGE_COLUMNS.items():
-                if col not in existing:
-                    conn.execute(f"ALTER TABLE routing_events ADD COLUMN {col} {typ}")
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS llm_calls (
-                    event_id            INTEGER REFERENCES routing_events(id),
-                    stage               TEXT,
-                    model               TEXT,
-                    input_tokens        INTEGER,
-                    output_tokens       INTEGER,
-                    cached_input_tokens INTEGER,
-                    latency_ms          REAL,
-                    cost_usd            REAL,
-                    error               TEXT
-                )
-                """
-            )
-
-    def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+        with self.engine.connect() as conn:
+            return conn.execute(select(func.count()).select_from(routing_events)).scalar_one()

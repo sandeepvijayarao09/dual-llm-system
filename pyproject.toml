@@ -1,0 +1,63 @@
+[project]
+name = "dual-llm-system"
+version = "0.2.0"
+description = "Cost-aware routing between a small and a large LLM: ML router → LLM classifier cascade, personalization, usage accounting."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.30.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.3.0",
+    "sqlalchemy>=2.0.30",
+    # router_v0.joblib was trained with 1.8.0; pickles are version-specific
+    "scikit-learn==1.8.0",
+    "joblib>=1.3.0",
+    "numpy>=1.26.0",
+]
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.60.0"]
+gemini = ["google-genai>=1.0.0"]
+postgres = ["psycopg[binary]>=3.2.0"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "httpx>=0.27.0",
+    "ruff>=0.6.0",
+    "mypy>=1.11.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["paper", "docs", "build", "web"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "W"]
+# E501: long prompt strings and tables are deliberate.
+# B008: FastAPI's Depends() in defaults is the framework idiom.
+# B905, E741: zip()/`l` idioms in the eval scripts, left as written.
+ignore = ["E501", "B008", "B905", "E741"]
+
+[tool.ruff.lint.per-file-ignores]
+"router/seed_data.py" = ["E", "W"]
+# conftest sets env vars before importing project modules
+"tests/conftest.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.11"
+plugins = ["pydantic.mypy"]
+files = ["api", "llm", "config.py", "orchestrator.py", "db", "router/classification_logger.py"]
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true

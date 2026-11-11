@@ -1,5 +1,5 @@
 """
-Profile Database — SQLite-backed storage for user profiles.
+Profile Database — persistent storage for user profiles.
 
 Each user has one persistent profile that evolves over time.
 Profile fields:
@@ -14,14 +14,19 @@ Profile fields:
   interaction_count: total number of sessions
   last_updated     : ISO timestamp of last profile update
 
-No external dependencies — uses Python's built-in sqlite3.
+Stored through SQLAlchemy: SQLite by default, any DATABASE_URL in production.
 """
 
-import json
-import sqlite3
-from datetime import datetime, timezone
-from config import DB_PATH
+from __future__ import annotations
 
+import json
+from datetime import UTC, datetime
+from pathlib import Path
+
+from sqlalchemy import delete, insert, select, update
+
+import config
+from db.engine import database_url, get_engine, profiles
 
 # ── Default profile structure ─────────────────────────────────────────────────
 
@@ -38,12 +43,16 @@ DEFAULT_PROFILE = {
 }
 
 
-class ProfileDB:
-    """Thin SQLite wrapper for user profile CRUD operations."""
+PERSONAS_PATH = Path(__file__).resolve().parent.parent / "data" / "personas.json"
 
-    def __init__(self, db_path: str = DB_PATH):
-        self.db_path = db_path
-        self._init_db()
+
+class ProfileDB:
+    """Profile CRUD over SQLAlchemy (SQLite file or DATABASE_URL)."""
+
+    def __init__(self, db_path: str | None = None):
+        # Resolved at call time so tests that reload config get their tmp DB
+        url = db_path or config.DATABASE_URL or config.DB_PATH
+        self.engine = get_engine(database_url(url))
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -52,21 +61,20 @@ class ProfileDB:
         Retrieve a user profile by user_id.
         Returns a default profile if the user doesn't exist yet.
         """
-        with self._connect() as conn:
+        with self.engine.connect() as conn:
             row = conn.execute(
-                "SELECT profile_json FROM profiles WHERE user_id = ?",
-                (user_id,)
-            ).fetchone()
+                select(profiles.c.profile_json).where(profiles.c.user_id == user_id)
+            ).first()
 
-        if row:
-            profile = json.loads(row[0])
-            profile["user_id"] = user_id
-            return profile
-
-        # First-time user — return default profile
-        profile = dict(DEFAULT_PROFILE)
+        profile = json.loads(row[0]) if row else dict(DEFAULT_PROFILE)
         profile["user_id"] = user_id
         return profile
+
+    def exists(self, user_id: str) -> bool:
+        with self.engine.connect() as conn:
+            return conn.execute(
+                select(profiles.c.user_id).where(profiles.c.user_id == user_id)
+            ).first() is not None
 
     def save(self, user_id: str, profile: dict) -> None:
         """
@@ -75,18 +83,16 @@ class ProfileDB:
         """
         profile = dict(profile)
         profile.pop("user_id", None)          # don't store user_id inside JSON
-        profile["last_updated"] = datetime.now(timezone.utc).isoformat()
+        profile["last_updated"] = datetime.now(UTC).isoformat()
+        payload = json.dumps(profile)
 
-        with self._connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO profiles (user_id, profile_json)
-                VALUES (?, ?)
-                ON CONFLICT(user_id) DO UPDATE SET
-                    profile_json = excluded.profile_json
-                """,
-                (user_id, json.dumps(profile))
-            )
+        with self.engine.begin() as conn:
+            updated = conn.execute(
+                update(profiles).where(profiles.c.user_id == user_id)
+                .values(profile_json=payload)
+            ).rowcount
+            if not updated:
+                conn.execute(insert(profiles).values(user_id=user_id, profile_json=payload))
 
     def merge_updates(self, user_id: str, updates: dict) -> dict:
         """
@@ -119,30 +125,27 @@ class ProfileDB:
 
     def delete(self, user_id: str) -> None:
         """Delete a user profile (for testing / reset)."""
-        with self._connect() as conn:
-            conn.execute("DELETE FROM profiles WHERE user_id = ?", (user_id,))
+        with self.engine.begin() as conn:
+            conn.execute(delete(profiles).where(profiles.c.user_id == user_id))
 
     def list_users(self) -> list[str]:
         """Return all stored user IDs."""
-        with self._connect() as conn:
-            rows = conn.execute("SELECT user_id FROM profiles").fetchall()
-        return [r[0] for r in rows]
+        with self.engine.connect() as conn:
+            return [r[0] for r in conn.execute(select(profiles.c.user_id))]
 
-    # ── Internal ──────────────────────────────────────────────────────────────
+    # ── Personas ──────────────────────────────────────────────────────────────
 
-    def _init_db(self) -> None:
-        """Create the profiles table if it doesn't exist."""
-        with self._connect() as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS profiles (
-                    user_id      TEXT PRIMARY KEY,
-                    profile_json TEXT NOT NULL
-                )
-                """
-            )
+    @staticmethod
+    def personas(path: Path = PERSONAS_PATH) -> list[dict]:
+        """The demo personas shipped in data/personas.json."""
+        return json.loads(path.read_text(encoding="utf-8"))
 
-    def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+    def seed_personas(self, path: Path = PERSONAS_PATH) -> int:
+        """Create any persona profile that doesn't exist yet. Returns how many."""
+        created = 0
+        for persona in self.personas(path):
+            if persona.get("profile") is None or self.exists(persona["user_id"]):
+                continue
+            self.save(persona["user_id"], {**DEFAULT_PROFILE, **persona["profile"]})
+            created += 1
+        return created

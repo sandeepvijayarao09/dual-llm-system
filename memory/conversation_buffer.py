@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class ConversationBuffer:
         rolling_summary  : compressed string of all evicted turns
     """
 
-    small_llm: Optional[object] = None        # duck-typed: needs .complete()
+    small_llm: Any = None                  # duck-typed: needs .complete()
     window_size: int = 3
     max_assistant_chars: int = 400
     recent_turns: list[dict] = field(default_factory=list)

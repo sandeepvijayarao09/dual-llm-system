@@ -5,18 +5,19 @@
 - **Why it matters:** Sending every query, even "hi", to the most expensive model wastes money.
 - **Key result:** The router picks the right model 92.6% of the time on 1,000 labelled queries, but a one-line word-count rule reaches 89.7%; my ablation (removing parts to see what matters) traced most of the gain to query length, a quirk of the benchmark labels.
 - **What I did:** Course project at Northeastern with Zichen Qi and Yalin Sun; the follow-up ablation (FINDINGS.md) and current paper are mine.
-- **Built with:** Python, OpenAI API, scikit-learn, Streamlit, SQLite, pytest.
-- **Try it:** `streamlit run app.py` (needs an OpenAI key; `pytest -q` runs tests without one).
+- **Built with:** Python, FastAPI, scikit-learn, SQLAlchemy (SQLite or Postgres), Next.js + TypeScript, OpenAI / Anthropic / Gemini adapters, uv, Docker.
+- **Try it:** `docker compose up --build` and open http://localhost:3000 (needs an API key; `uv run pytest -q` runs tests without one).
 
 **A cascade router that sends each chat query to GPT-4o-mini or GPT-4o, plus an
 honest ablation of why it works.** A word-count pre-flight, a TF-IDF + logistic
-regression router, and a GPT-4o-mini classifier fallback pick the model; SQLite
+regression router, and a GPT-4o-mini classifier fallback pick the model; stored
 user profiles and a sliding-window memory personalize the answer.
 
 [![CI](https://github.com/sandeepvijayarao09/dual-llm-system/actions/workflows/ci.yml/badge.svg)](https://github.com/sandeepvijayarao09/dual-llm-system/actions/workflows/ci.yml)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)
 ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?style=flat-square&logo=openai&logoColor=white)
-![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-1.8-F7931E?style=flat-square&logo=scikit-learn&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](LICENSE)
 
@@ -112,6 +113,36 @@ User Query
          Step 3: Personalizer → intro + closing (GPT-4o-mini)
          Step 4: Assemble: intro + core + "---" + closing
 ```
+
+### Services
+
+```
+Next.js UI (web/, :3000) ──/api──►  FastAPI (api/, :8000) ──►  Orchestrator (cascade above)
+                                     POST /v1/chat/completions      │
+                                     (OpenAI-compatible)            ├─► provider adapters
+                                                                    │   OpenAI · Anthropic · Gemini
+                                                                    └─► SQLAlchemy: profiles, routing log
+                                                                        (SQLite, or Postgres via DATABASE_URL)
+```
+
+Each model role is a provider plus a model (`SMALL_PROVIDER`/`SMALL_MODEL`,
+`LARGE_PROVIDER`/`LARGE_MODEL`), so the cascade runs on any of the three
+vendors without code changes. Because the endpoint is OpenAI-compatible, any
+OpenAI client can use the router as a model called `auto` (or `small`/`large`
+to force one):
+
+```python
+from openai import OpenAI
+client = OpenAI(base_url="http://localhost:8000/v1", api_key="unused")
+r = client.chat.completions.create(model="auto", user="cs_student",
+                                   messages=[{"role": "user", "content": "Hi!"}])
+print(r.choices[0].message.content)
+print(r.model_extra["routing"]["decision"], r.model_extra["routing"]["cost_usd"])
+```
+
+The response adds a `routing` object: decision, who decided, every LLM call
+with tokens, latency and estimated cost, and the exact prompts sent. Interactive
+API docs are at http://localhost:8000/docs.
 
 ---
 
@@ -274,16 +305,17 @@ Examples:
 /large    ← empty query also works
 ```
 
-Routing badge shows `⚡ Forced → Large LLM (GPT-4o)` in the UI.
+The routing badge under the answer shows `Forced · Large LLM`.
 
 ---
 
 ## Prompt Visibility
 
-Every response in the UI has two expanders:
-
-- **🔍 Routing Details** — routing decision, model used, latency, ML prediction, classifier JSON, buffer state
-- **📤 Prompts Sent to Models** — exact system prompt + user message sent to each model call (Reasoner, Summarizer, Personalizer, or SimpleAnswerer)
+Every answer in the web UI has a collapsible **Routing details** panel:
+routing decision, model used, latency, estimated cost and tokens, a per-call
+table, the ML prediction, the classifier JSON, buffer state, and **Prompts
+sent** — the exact system prompt and user message for each model call
+(Reasoner, Summarizer, Personalizer, or SimpleAnswerer).
 
 ---
 
@@ -305,8 +337,9 @@ Token counts come from the API's `usage` block; cost is estimated from the
 list prices in `llm/usage.py` (`MODEL_PRICES`, dated by `PRICES_AS_OF`). A
 model that is not in the table is logged with `cost_usd = NULL`, never a
 guess. Older log files gain the new columns automatically. The same numbers
-show in the Streamlit **Routing Details** panel, with a running session total
-in the sidebar.
+come back in the API's `routing` object and show in the web UI's **Routing
+details** panel, with a running session total in the sidebar. `GET /v1/usage`
+returns the totals per route.
 
 ```bash
 # Measured tokens, cost and latency per route from real traffic
@@ -341,43 +374,40 @@ python -m router.train --extra real_traffic.csv
 
 ### Prerequisites
 
-- Python 3.11+ (scikit-learn 1.8 needs it)
-- OpenAI API key
+- An API key for at least one provider (OpenAI for the defaults)
+- Docker, **or** [uv](https://docs.astral.sh/uv/) + Node 24 for local development
 
-### Setup
+### Run everything (Docker)
 
 ```bash
-# 1. Clone the repo
 git clone https://github.com/sandeepvijayarao09/dual-llm-system.git
 cd dual-llm-system
-
-# 2. Create virtual environment
-python -m venv venv
-source venv/bin/activate        # macOS/Linux
-# venv\Scripts\activate         # Windows
-
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Configure environment
-cp .env.example .env
-# Edit .env — set OPENAI_API_KEY=your_key_here
-
-# 5a. Launch Streamlit UI
-streamlit run app.py
-
-# 5b. Or use the CLI
-python main.py --user cs_student --verbose
+cp .env.example .env            # set OPENAI_API_KEY (or another provider)
+docker compose up --build       # Postgres + API (:8000) + web UI (:3000)
 ```
 
-### Tests
+### Local development
 
 ```bash
-pytest -q        # 38 tests, no API key needed (LLM calls are faked)
+uv sync --all-extras                    # Python 3.11+, all providers + Postgres driver
+uv run uvicorn api.main:app --reload    # API on :8000
+
+cd web && npm ci && npm run dev         # UI on :3000, proxies /api to :8000
+
+uv run python main.py --user cs_student --verbose   # or the CLI
 ```
 
-CI runs the tests on Python 3.11 and 3.12 and checks that the 1000-case eval
-still reproduces from the committed model.
+### Tests and checks
+
+```bash
+uv run pytest -q     # no API key needed (LLM calls are faked)
+uv run ruff check .
+uv run mypy
+cd web && npm run lint && npm run typecheck && npm run build
+```
+
+CI runs all of these on Python 3.11 and 3.12, builds both Docker images, and
+checks that the 1000-case eval still reproduces from the committed model.
 
 ### CLI Options
 
@@ -391,6 +421,8 @@ python main.py --user cs_student --show-profile  # print profile and exit
 
 ### Pre-seeded Personas
 
+Defined in [`data/personas.json`](data/personas.json) and created on first start.
+
 | User ID | Name | Expertise | Domain |
 |---|---|---|---|
 | `cs_student` | Alex | Intermediate | Computer Science |
@@ -403,15 +435,20 @@ python main.py --user cs_student --show-profile  # print profile and exit
 
 ```
 dual-llm-system/
-├── app.py                      # Streamlit web UI
+├── api/                        # FastAPI service (OpenAI-compatible chat endpoint)
+├── web/                        # Next.js + TypeScript UI
 ├── main.py                     # CLI entry point
 ├── orchestrator.py             # Central routing engine
-├── config.py                   # All configuration + env vars
-├── requirements.txt
+├── config.py                   # Typed settings (pydantic-settings)
+├── pyproject.toml, uv.lock     # dependencies (uv)
+├── Dockerfile, docker-compose.yml
 │
 ├── llm/
-│   ├── small_llm.py            # GPT-4o-mini client
-│   └── large_llm.py            # GPT-4o client
+│   ├── providers.py            # OpenAI / Anthropic / Gemini adapters
+│   ├── base.py                 # model-role client the modules call
+│   ├── small_llm.py            # Small role (default GPT-4o-mini)
+│   ├── large_llm.py            # Large role (default GPT-4o)
+│   └── usage.py                # per-call tokens, latency, est. cost
 │
 ├── modules/
 │   ├── classifier.py           # LLM-based query classifier
@@ -425,11 +462,12 @@ dual-llm-system/
 │   ├── ml_router.py            # TF-IDF + LogisticRegression pipeline
 │   ├── train.py                # Training script
 │   ├── seed_data.py            # 239 labeled training examples
-│   ├── classification_logger.py # SQLite log for retraining
+│   ├── classification_logger.py # routing + usage log for retraining
 │   ├── eval_data.py            # loads data/*.jsonl
 │   ├── eval_500.py             # 500-case evaluation script
 │   ├── eval_1000.py            # 1000-case evaluation script
 │   ├── ablation.py             # controlled ablation behind FINDINGS.md
+│   ├── cost_eval.py            # estimated cost per routing strategy
 │   ├── plot_ablation.py        # draws docs/router_vs_baselines.svg
 │   └── models/
 │       └── router_v0.joblib    # Trained model (saved pipeline)
@@ -438,11 +476,13 @@ dual-llm-system/
 │   └── conversation_buffer.py  # Sliding window + rolling summary
 │
 ├── db/
-│   └── profile_db.py           # SQLite CRUD for user profiles
+│   ├── engine.py               # SQLAlchemy engine + schema
+│   └── profile_db.py           # user profile CRUD + persona seeding
 │
 ├── data/
 │   ├── eval_500.jsonl          # 500 labelled routing queries
-│   └── eval_1000.jsonl         # 1000 labelled routing queries (23 categories)
+│   ├── eval_1000.jsonl         # 1000 labelled routing queries (23 categories)
+│   └── personas.json           # demo personas
 │
 ├── tests/                      # pytest, no API key needed
 ├── paper/                      # NeurIPS-format paper (main.tex, main.pdf)
@@ -458,9 +498,12 @@ All settings are in `.env` (copy from `.env.example`):
 
 | Variable | Default | Description |
 |---|---|---|
-| `OPENAI_API_KEY` | required | OpenAI API key |
+| `OPENAI_API_KEY` | required for OpenAI | OpenAI API key |
+| `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` | unset | Keys for the other providers |
+| `SMALL_PROVIDER`, `LARGE_PROVIDER` | `openai` | `openai`, `anthropic` or `gemini` per role |
 | `LARGE_MODEL` | `gpt-4o` | Model for complex queries |
 | `SMALL_MODEL` | `gpt-4o-mini` | Model for simple queries + all support tasks |
+| `DATABASE_URL` | unset | SQLAlchemy URL for profiles + routing log (e.g. Postgres); overrides the two SQLite paths |
 | `CONFIDENCE_THRESHOLD` | `0.75` | Min LLM classifier confidence to trust "small" |
 | `LARGE_INPUT_THRESHOLD` | `2000` | Word count to bypass classification |
 | `ML_ROUTER_CONFIDENCE_THRESHOLD` | `0.65` | Min ML router confidence before LLM fallback |
@@ -496,13 +539,15 @@ python -m router.train --extra my_data.csv
 
 | Layer | Technology |
 |---|---|
-| Small LLM | GPT-4o-mini (OpenAI) |
-| Large LLM | GPT-4o (OpenAI) |
+| Small / Large LLM | GPT-4o-mini / GPT-4o by default; any OpenAI, Anthropic or Gemini model per role |
 | ML Router | scikit-learn — TF-IDF + Logistic Regression |
-| Web UI | Streamlit |
-| Profile DB | SQLite (raw, no ORM) |
-| Routing Log | SQLite (ClassificationLogger) |
-| Config | python-dotenv |
+| API | FastAPI + Uvicorn, OpenAI-compatible `/v1/chat/completions` |
+| Web UI | Next.js (App Router), React, TypeScript, Tailwind CSS |
+| Storage | SQLAlchemy 2 — SQLite in development, Postgres via `DATABASE_URL` |
+| Config | pydantic-settings (typed, validated) |
+| Usage accounting | per-call tokens / latency / est. cost (`llm/usage.py`) |
+| Tooling | uv (lockfile), ruff, mypy, pytest, ESLint, GitHub Actions |
+| Deployment | Docker images for API and web, docker-compose with Postgres |
 | Model persistence | joblib |
 
 ---

@@ -88,7 +88,6 @@ def test_multiple_evictions_pass_previous_summary(fake_small_llm):
     fake_small_llm.script(lambda s, u: True, "")     # won't actually be used
     # Override complete directly to yield a different value each call
     call_log: list[str] = []
-    original_complete = fake_small_llm.complete
     def complete(system, user_message, **kwargs):
         call_log.append(user_message)
         return next(responses, "FINAL")

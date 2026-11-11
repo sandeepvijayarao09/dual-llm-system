@@ -85,3 +85,48 @@ def fake_small_llm():
 @pytest.fixture
 def fake_large_llm():
     return FakeLLM(model="fake-large")
+
+
+@pytest.fixture
+def orch(monkeypatch, tmp_path, fake_small_llm, fake_large_llm):
+    """Fully wired Orchestrator with fake LLMs + tmp DBs."""
+    # Isolate databases
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "profiles.db"))
+    monkeypatch.setenv("ROUTING_LOG_PATH", str(tmp_path / "routing.db"))
+
+    # Force config reload (it's read at import time, but the orchestrator
+    # re-reads constants by module import — we patch them directly below)
+    import importlib
+
+    import config
+    importlib.reload(config)
+
+    from orchestrator import Orchestrator
+
+    o = Orchestrator()
+
+    # Swap in fakes — we re-init the modules that depended on the real clients
+    o.small_llm = fake_small_llm
+    o.large_llm = fake_large_llm
+
+    # Rebuild dependents that captured the original clients
+    from modules.answerer import SimpleAnswerer
+    from modules.classifier import Classifier
+    from modules.personalizer import Personalizer
+    from modules.profile_updater import ProfileUpdater
+    from modules.reasoner import Reasoner
+
+    o.classifier      = Classifier(fake_small_llm)
+    o.answerer        = SimpleAnswerer(fake_small_llm)
+    o.reasoner        = Reasoner(fake_large_llm)
+    o.context_adder   = Personalizer(fake_small_llm)
+    o.profile_updater = ProfileUpdater(fake_small_llm)
+
+    # Re-init buffers dict so they also use the fake small LLM
+    o.buffers.clear()
+
+    # Re-init logger to tmp path
+    from router.classification_logger import ClassificationLogger
+    o.routing_log = ClassificationLogger(str(tmp_path / "routing.db"))
+
+    return o

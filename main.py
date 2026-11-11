@@ -13,6 +13,7 @@ import argparse
 import json
 import logging
 import sys
+
 from orchestrator import Orchestrator
 
 # ── Demo queries ──────────────────────────────────────────────────────────────
@@ -75,7 +76,7 @@ def print_response(resp, verbose: bool = False) -> None:
                 f"({bs.get('summary_chars', 0)} chars)"
             )
         if resp.context_note:
-            print(f"   Context note added ✅")
+            print("   Context note added ✅")
     print()
 
 

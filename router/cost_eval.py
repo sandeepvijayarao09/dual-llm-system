@@ -33,7 +33,7 @@ import json
 import os
 from dataclasses import dataclass
 
-from config import LARGE_MODEL, SMALL_MODEL, ML_ROUTER_PATH, ML_ROUTER_CONFIDENCE_THRESHOLD
+from config import LARGE_MODEL, ML_ROUTER_CONFIDENCE_THRESHOLD, ML_ROUTER_PATH, SMALL_MODEL
 from llm.usage import PRICES_AS_OF, estimate_cost
 from modules.answerer import ANSWERER_SYSTEM
 from modules.classifier import CLASSIFIER_SYSTEM
