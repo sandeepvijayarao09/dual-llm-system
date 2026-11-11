@@ -227,6 +227,45 @@ as v1's dev set and is no longer a clean test for v1; one distillation run.
 `router_v0.joblib` is unchanged and `router.eval_1000` still scores it, so the
 published 92.6% reproduces. The app now loads `router_v1.joblib` by default.
 
+## 10. Deferral curve: the threshold as a knob, not a point
+
+Reproduce with `.venv/bin/python -m router.deferral_curve` (cached verdicts,
+no model calls). Sweeping the ML router's confidence threshold traces
+cascade accuracy against the share of queries deferred to the classifier,
+the standard way cascades are compared, with random and oracle deferral as
+baselines.
+
+![Deferral curve](docs/deferral_curve.svg)
+
+| Threshold | v1 deferred | v1 cascade | v0 deferred | v0 cascade |
+|---|---|---|---|---|
+| 0.50 (never defer) | 0.0% | 93.2% | 0.0% | 92.6% |
+| 0.60 | 8.8% | 95.7% | 6.5% | 94.5% |
+| **0.65 (shipped)** | **14.6%** | **95.8%** | 14.7% | 94.7% |
+| 0.70 | 24.6% | 95.5% | 24.2% | 95.4% |
+| 0.80 | 49.5% | 94.5% | 56.2% | 95.0% |
+| 1.00 (always defer) | 100% | 93.8% | 100% | 93.8% |
+
+Area under the curve (mean accuracy over 0–100% deferral): v1 0.947, v0
+0.946, random deferral 0.935, oracle deferral 0.968.
+
+- **More deferral is not better.** The cascade beats the classifier alone
+  (93.8%) at every threshold below ~0.95: on queries the ML router is sure
+  about, it is more often right than Gemma is. v1's curve peaks at 96.0%
+  around 12–13% deferred, next to the shipped 0.65 point.
+- **v1's advantage is all at low deferral.** Compared at the same deferral
+  share, v1 leads v0 by 1.0–1.1 points from 8% to 15% deferred (0.6–0.7
+  below that), they tie at 25%, and past that v0 is ahead by 0.2–0.6. The
+  areas are equal (0.947 vs 0.946). That fits §9: distillation improved
+  *which* queries the router is least sure about, not its overall ranking —
+  so v1 is the better router at the shipped operating point, not everywhere.
+- **The confidence score is the bottleneck.** An oracle that defers exactly
+  the queries the router gets wrong and the classifier gets right reaches
+  **96.9% while deferring only 3.7%**. Better uncertainty estimates would gain
+  more than a better classifier.
+- This is a diagnostic on the test set. The threshold stays at 0.65; picking
+  it from this curve would tune on Eval-1000.
+
 ## What this means
 
 The engineering is sound and the reported numbers are honest and reproducible.

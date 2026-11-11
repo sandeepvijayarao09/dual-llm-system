@@ -31,3 +31,6 @@ profiles.db
 Thumbs.db
 *.db-wal
 *.db-shm
+
+# Locally trained routers (committed models are router_v0 / router_v1)
+router/models/router_trained.joblib

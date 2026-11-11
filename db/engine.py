@@ -9,6 +9,7 @@ added to an existing database automatically (`_upgrade`).
 
 from __future__ import annotations
 
+import os
 from functools import cache
 
 from sqlalchemy import (
@@ -80,6 +81,12 @@ def database_url(path_or_url: str) -> str:
 
 @cache
 def get_engine(url: str) -> Engine:
+    if url.startswith("sqlite:///") and url != "sqlite:///:memory:":
+        # SQLite creates the file but not its folder; a missing folder would
+        # otherwise fail as "unable to open database file".
+        folder = os.path.dirname(url.removeprefix("sqlite:///"))
+        if folder:
+            os.makedirs(folder, exist_ok=True)
     engine = create_engine(url, future=True)
     if engine.dialect.name == "sqlite":
         @event.listens_for(engine, "connect")

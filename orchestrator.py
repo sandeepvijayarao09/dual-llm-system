@@ -3,7 +3,7 @@ Orchestration Engine — the central brain of the Dual LLM System.
 
 Flow:
   1. Load user profile from DB (auto, by user_id)
-  2. Pre-flight check (token count)
+  2. Pre-flight check (word count > LARGE_INPUT_THRESHOLD → Large LLM)
   3. Route:
        a. Try ML router first (fast, offline) if enabled
        b. If ML confidence < threshold → fall back to LLM classifier

@@ -22,6 +22,7 @@ import argparse
 import json
 import os
 import statistics
+import sys
 import time
 
 from config import CONFIDENCE_THRESHOLD, ML_ROUTER_CONFIDENCE_THRESHOLD, ML_ROUTER_PATH
@@ -84,6 +85,8 @@ def main() -> None:
     ap.add_argument("--all", action="store_true",
                     help="also run the LLM classifier alone on all 1000 queries")
     args = ap.parse_args()
+    # Results appear as they're computed, even when stdout is a file or a pipe
+    sys.stdout.reconfigure(line_buffering=True)  # type: ignore[attr-defined]
 
     small = SmallLLM()
     classifier = Classifier(small)

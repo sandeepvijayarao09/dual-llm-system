@@ -102,3 +102,10 @@ def test_old_database_is_migrated(tmp_path):
     log.log(query="new row", final_routing="small", usage={"cost_usd": 0.5})
     assert log.count() == 2
     assert log.cost_summary()["cost_usd"] == pytest.approx(0.5)
+
+
+def test_missing_database_folder_is_created(tmp_path):
+    path = tmp_path / "not" / "yet" / "routing.db"
+    log = ClassificationLogger(str(path))
+    log.log(query="hi", final_routing="small")
+    assert path.exists() and log.count() == 1
